@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, ROLE_DEFINITIONS, ODS_LIST } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History } from 'lucide-react';
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
@@ -20,7 +20,7 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-900/50 border border-indigo-700 text-indigo-300 text-xs font-bold tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4">
-             <Sparkles className="w-3 h-3" /> <span>NUEVA VERSIÓN: COEVALUACIÓN DIABÓLICA</span>
+             <Sparkles className="w-3 h-3" /> <span>NUEVA VERSIÓN: INSPECTOR DE IMPORTACIÓN</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
@@ -233,7 +233,23 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
               <div className="col-span-1"><label className="block text-sm font-bold text-slate-700 mb-2">Número de Grupo</label><input type="text" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50" value={config.groupNumber || ''} onChange={(e) => setConfig({...config, groupNumber: e.target.value})} placeholder="Ej: G-04" /></div>
               <div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Proyecto</label><input type="text" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50" value={config.projectName} onChange={(e) => setConfig({...config, projectName: e.target.value})} placeholder="Ej: GastroMurcia Experience" /></div>
               <div className="col-span-1"><label className="block text-sm font-bold text-slate-700 mb-2">Fecha de Entrega</label><input type="date" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50" value={config.deliveryDate || ''} onChange={(e) => setConfig({...config, deliveryDate: e.target.value})} /></div>
-              <div className="col-span-1"><label className="block text-sm font-bold text-slate-700 mb-2">Zona Gastronómica</label><select className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${config.zone ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-slate-50 border-slate-300'}`} value={config.zone} onChange={(e) => setConfig({...config, zone: e.target.value})}><option value="" disabled>-- Selecciona una Zona --</option>{ZONES.map(z => <option key={z} value={z}>{z}</option>)}</select></div>
+              <div className="col-span-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Zona Gastronómica</label>
+                  <select 
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${config.zone ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-slate-50 border-slate-300'}`} 
+                    value={config.zone} 
+                    onChange={(e) => setConfig({...config, zone: e.target.value})}
+                  >
+                    <option value="" disabled>-- Selecciona una Zona --</option>
+                    {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
+                  </select>
+                  {config.zone && (
+                    <div className="mt-2 p-2 bg-emerald-50 rounded border border-emerald-100 text-xs text-emerald-800 font-medium flex items-start gap-2">
+                       <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                       <span>{config.zone}</span>
+                    </div>
+                  )}
+              </div>
             </div>
           </div>
 
@@ -283,56 +299,137 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
   );
 };
 
-// --- Helper for Smart Import Modal ---
+// --- Helper for Smart Import Modal (INSPECTOR) ---
+const getContentStats = (json: any): string[] => {
+  const stats: string[] = [];
+  
+  // Is it a full backup?
+  if (json.config && json.phases) {
+    stats.push(`📅 Fecha: ${new Date(json.lastModifiedDate || Date.now()).toLocaleString()}`);
+    stats.push(`👥 Equipo: ${json.config.teamName}`);
+    stats.push(`👤 Autor: ${json.lastModifiedBy}`);
+    const phaseCount = Object.values(json.phases).filter((p: any) => p && (Array.isArray(p) ? p.length > 0 : Object.keys(p).length > 0)).length;
+    stats.push(`📂 Fases activas: ${phaseCount}`);
+    return stats;
+  }
+
+  // Is it a contribution?
+  const pid = json.phaseId;
+  const c = json.content;
+  
+  if (!pid || !c) return ["Archivo no reconocido o corrupto"];
+
+  if (pid === 'phase2') {
+    const p2 = c as Phase2Data;
+    if (p2.trends?.length) stats.push(`✨ ${p2.trends.length} Tendencias`);
+    if (p2.publicAnalysis?.length) stats.push(`👥 ${p2.publicAnalysis.length} Análisis Público`);
+    if (p2.menuBenchmarking?.length) stats.push(`🍽️ ${p2.menuBenchmarking.length} Cartas Referencia`);
+    if (p2.concept?.name) stats.push(`💡 Concepto: ${p2.concept.name}`);
+    if (p2.weeklyReports?.length) stats.push(`📅 ${p2.weeklyReports.length} Informes Semanales`);
+  } else if (pid === 'phase3') {
+    const p3 = c as Phase3Data;
+    if (p3.products?.list) stats.push(`🥬 Lista Productos`);
+    if (p3.menu?.length) stats.push(`👨‍🍳 ${p3.menu.length} Platos`);
+    if (p3.visual?.qrUrl) stats.push(`📱 Diseño Visual`);
+  } else if (pid === 'phase4') {
+    const p4 = c as Phase4Data;
+    if (p4.financials?.length) stats.push(`💰 ${p4.financials.length} Escandallos`);
+    if (p4.dishes?.length) stats.push(`👅 ${p4.dishes.length} Catas`);
+    if (p4.brigadeReport) stats.push(`📝 Informe Brigada`);
+  } else if (pid === 'phase5') {
+    const p5 = c as Phase5Data;
+    if (p5.individualChecklist) stats.push(`✅ Checklist Individual`);
+    if (p5.coEvaluations?.length) stats.push(`⚖️ ${p5.coEvaluations.length} Coevaluaciones`);
+    if (p5.finalConclusions) stats.push(`📜 Conclusiones`);
+  } else {
+    stats.push("📄 Contenido de texto/genérico");
+  }
+
+  return stats;
+};
+
 const SmartImportModal: React.FC<{
   candidate: any, 
   members: any[], 
-  onConfirm: (author: string) => void, 
+  onConfirm: (author: string, isFullBackup: boolean) => void, 
   onCancel: () => void 
 }> = ({ candidate, members, onConfirm, onCancel }) => {
   const [selectedMember, setSelectedMember] = useState('');
+  const isFullBackup = !!(candidate.config && candidate.phases);
+  const stats = getContentStats(candidate);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-        <div className="bg-indigo-600 p-6 text-white">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+        <div className={`${isFullBackup ? 'bg-amber-600' : 'bg-indigo-600'} p-6 text-white`}>
            <h3 className="text-xl font-bold flex items-center gap-2">
-             <UserPlus className="w-6 h-6" /> Asignar Autoría
+             {isFullBackup ? <AlertOctagon className="w-6 h-6" /> : <FileSearch className="w-6 h-6" />} 
+             {isFullBackup ? 'Restaurar Copia Seguridad' : 'Inspector de Importación'}
            </h3>
-           <p className="text-indigo-100 text-sm mt-1">Has subido un archivo. ¿A qué miembro del equipo corresponde este aporte?</p>
+           <p className={`${isFullBackup ? 'text-amber-100' : 'text-indigo-100'} text-sm mt-1`}>
+             {isFullBackup ? 'Vas a sobrescribir TODO el proyecto.' : 'Analizando pieza para fusionar...'}
+           </p>
         </div>
         
-        <div className="p-6 space-y-4">
-           <div className="bg-slate-50 p-4 rounded border border-slate-200">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Contenido Detectado</p>
-              <p className="font-medium text-slate-800">Fase: {PHASES.find(p => p.id === candidate.phaseId)?.title || candidate.phaseId}</p>
-              <p className="text-sm text-slate-500">Autor original en archivo: <span className="font-mono">{candidate.author}</span></p>
+        <div className="p-6 space-y-5">
+           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex justify-between items-center mb-2">
+                 <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><PackageOpen className="w-3 h-3"/> Contenido Detectado</p>
+                 {!isFullBackup && <span className="text-xs bg-slate-200 px-2 py-1 rounded text-slate-600 font-mono">{candidate.phaseId}</span>}
+              </div>
+              <div className="space-y-1">
+                 {stats.map((s, i) => (
+                    <div key={i} className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                       <span className="w-1 h-1 rounded-full bg-indigo-400"></span> {s}
+                    </div>
+                 ))}
+                 {stats.length === 0 && <span className="text-slate-400 text-sm italic">Sin datos relevantes detectados</span>}
+              </div>
+              {!isFullBackup && candidate.author && (
+                 <p className="text-xs text-slate-400 mt-3 pt-2 border-t border-slate-200">Autor original en archivo: <span className="font-mono text-slate-600">{candidate.author}</span></p>
+              )}
            </div>
 
-           <div>
-             <label className="block text-sm font-bold text-slate-700 mb-2">Seleccionar Miembro del Equipo:</label>
-             <select 
-                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-                value={selectedMember}
-                onChange={(e) => setSelectedMember(e.target.value)}
-             >
-                <option value="">-- Seleccionar Alumno --</option>
-                {members.map(m => (
-                  <option key={m.name} value={m.name}>{m.name} - {m.role}</option>
-                ))}
-             </select>
-           </div>
+           {isFullBackup ? (
+             <div className="bg-red-50 text-red-800 p-3 rounded border border-red-200 text-sm flex gap-2 items-start">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <p><strong>¡Cuidado!</strong> Esta acción borrará cualquier progreso no guardado y reemplazará el proyecto actual por el contenido de este archivo.</p>
+             </div>
+           ) : (
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Asignar Autoría (¿Quién eres?):</label>
+                <select 
+                   className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                   value={selectedMember}
+                   onChange={(e) => setSelectedMember(e.target.value)}
+                >
+                   <option value="">-- Seleccionar Alumno --</option>
+                   {members.map(m => (
+                     <option key={m.name} value={m.name}>{m.name} - {m.role}</option>
+                   ))}
+                </select>
+             </div>
+           )}
         </div>
 
         <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
-          <button onClick={onCancel} className="px-4 py-2 text-slate-500 hover:text-slate-800 font-medium">Cancelar</button>
-          <button 
-             onClick={() => onConfirm(selectedMember)}
-             disabled={!selectedMember}
-             className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold disabled:opacity-50 transition-colors"
-          >
-            Confirmar e Importar
-          </button>
+          <button onClick={onCancel} className="px-4 py-2 text-slate-500 hover:text-slate-800 font-medium transition-colors">Cancelar</button>
+          {isFullBackup ? (
+             <button 
+                onClick={() => onConfirm('', true)}
+                className="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2"
+             >
+               <History className="w-4 h-4" /> Restaurar Backup
+             </button>
+          ) : (
+             <button 
+                onClick={() => onConfirm(selectedMember, false)}
+                disabled={!selectedMember}
+                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold disabled:opacity-50 shadow-sm transition-colors flex items-center gap-2"
+             >
+               <RotateCcw className="w-4 h-4" /> Fusionar Pieza
+             </button>
+          )}
         </div>
       </div>
     </div>
@@ -428,6 +525,12 @@ export default function App() {
     });
   };
 
+  // Helper for timestamps
+  const getTimestamp = () => {
+    const now = new Date();
+    return `${now.getFullYear()}${String(now.getMonth()+1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  };
+
   const downloadJSON = (data: any, filename: string) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -440,7 +543,7 @@ export default function App() {
 
   const handleConfigComplete = (config: ProjectConfig) => {
     setProjectState(prev => ({ ...prev, config }));
-    downloadJSON(config, `Configuracion_${config.teamName.replace(/\s+/g, '_')}.json`);
+    downloadJSON(config, `Config_${config.teamName.replace(/\s+/g, '_')}_${getTimestamp()}.json`);
     setMode(AppMode.WORKSPACE);
   };
 
@@ -463,123 +566,120 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  // Reads file but pauses for "Who is this?" check
+  // Unified File Handler that opens the Inspector
   const handleImportContributionFile = (file: File) => {
      const reader = new FileReader();
      reader.onload = (e) => {
        try {
          const json = JSON.parse(e.target?.result as string);
-         if (!json.phaseId && !json.config) throw new Error("Formato desconocido");
+         // Check basic validity
+         const isFull = json.config && json.phases;
+         const isPart = json.phaseId && json.content;
          
-         // If it's a Contribution, ask for Author
-         if (json.phaseId) {
-           setImportCandidate(json);
-           setShowImportModal(true);
-         } else {
-           // Fallback for full project import inside workspace (overwrite)
-           if (window.confirm("Has subido un archivo de Proyecto Completo. ¿Quieres sobrescribir todo tu trabajo actual?")) {
-             if(!json.phases.phase5) json.phases.phase5 = INITIAL_PHASE_5;
-             setProjectState(json);
-           }
-         }
+         if (!isFull && !isPart) throw new Error("Formato desconocido");
+         
+         setImportCandidate(json);
+         setShowImportModal(true);
        } catch (err) {
-         alert("Error: Archivo inválido.");
+         alert("Error: Archivo inválido o no reconocido.");
        }
      };
      reader.readAsText(file);
   };
 
-  // The actual logic that runs AFTER the Coordinator confirms "This file is from Maria"
-  const executeSmartMerge = (authorName: string) => {
+  // The actual logic that runs AFTER confirmation in Inspector
+  const executeSmartMerge = (authorName: string, isFullBackup: boolean) => {
     if (!importCandidate) return;
     
-    setProjectState(prev => {
-      const newPhases = { ...prev.phases };
-      const contrib = { ...importCandidate, author: authorName }; // Override author
-      
-      // SMART MERGE LOGIC
-      if (contrib.phaseId === 'phase2') {
-          const currentP2 = newPhases.phase2 as Phase2Data;
-          const incomingP2 = contrib.content as Phase2Data;
-          
-          const mergedTrends = [...currentP2.trends, ...incomingP2.trends.map(p => ({...p, author: authorName}))];
-          const mergedPublic = [...currentP2.publicAnalysis, ...incomingP2.publicAnalysis.map(c => ({...c, author: authorName}))];
-          const mergedMenu = [...currentP2.menuBenchmarking, ...incomingP2.menuBenchmarking.map(d => ({...d, author: authorName}))];
-          const mergedGraphs = [...currentP2.graphs, ...incomingP2.graphs.map(g => ({...g, author: authorName}))];
+    if (isFullBackup) {
+       // Restore full backup
+       if(!importCandidate.phases.phase5) importCandidate.phases.phase5 = INITIAL_PHASE_5;
+       setProjectState(importCandidate);
+       alert("✅ Proyecto restaurado con éxito.");
+    } else {
+       // Merge logic
+       setProjectState(prev => {
+        const newPhases = { ...prev.phases };
+        const contrib = { ...importCandidate, author: authorName }; // Override author
+        
+        // SMART MERGE LOGIC
+        if (contrib.phaseId === 'phase2') {
+            const currentP2 = newPhases.phase2 as Phase2Data;
+            const incomingP2 = contrib.content as Phase2Data;
+            
+            const mergedTrends = [...currentP2.trends, ...incomingP2.trends.map(p => ({...p, author: authorName}))];
+            const mergedPublic = [...currentP2.publicAnalysis, ...incomingP2.publicAnalysis.map(c => ({...c, author: authorName}))];
+            const mergedMenu = [...currentP2.menuBenchmarking, ...incomingP2.menuBenchmarking.map(d => ({...d, author: authorName}))];
+            const mergedGraphs = [...currentP2.graphs, ...incomingP2.graphs.map(g => ({...g, author: authorName}))];
 
-          const newSynthesis = currentP2.synthesis 
-            ? `${currentP2.synthesis}\n\n--- Aportación de ${authorName}: ---\n${incomingP2.synthesis}`
-            : incomingP2.synthesis;
+            const newSynthesis = currentP2.synthesis 
+              ? `${currentP2.synthesis}\n\n--- Aportación de ${authorName}: ---\n${incomingP2.synthesis}`
+              : incomingP2.synthesis;
 
-          const newConcept = { ...currentP2.concept };
-          // Only overwrite if empty
-          if(!newConcept.name) newConcept.name = incomingP2.concept.name;
-          if(!newConcept.restaurantType) newConcept.restaurantType = incomingP2.concept.restaurantType;
-          if(!newConcept.culinaryStyle) newConcept.culinaryStyle = incomingP2.concept.culinaryStyle;
-          if(!newConcept.targetAudience) newConcept.targetAudience = incomingP2.concept.targetAudience;
-          if(!newConcept.averagePrice) newConcept.averagePrice = incomingP2.concept.averagePrice;
-          if(!newConcept.description) newConcept.description = incomingP2.concept.description;
+            const newConcept = { ...currentP2.concept };
+            // Only overwrite if empty
+            if(!newConcept.name) newConcept.name = incomingP2.concept.name;
+            if(!newConcept.restaurantType) newConcept.restaurantType = incomingP2.concept.restaurantType;
+            if(!newConcept.culinaryStyle) newConcept.culinaryStyle = incomingP2.concept.culinaryStyle;
+            if(!newConcept.targetAudience) newConcept.targetAudience = incomingP2.concept.targetAudience;
+            if(!newConcept.averagePrice) newConcept.averagePrice = incomingP2.concept.averagePrice;
+            if(!newConcept.description) newConcept.description = incomingP2.concept.description;
 
-          const mergedRefs = [...new Set([...currentP2.references, ...incomingP2.references])];
-          const mergedReports = [...currentP2.weeklyReports, ...incomingP2.weeklyReports];
+            const mergedRefs = [...new Set([...currentP2.references, ...incomingP2.references])];
+            const mergedReports = [...currentP2.weeklyReports, ...incomingP2.weeklyReports];
 
-          newPhases.phase2 = {
-            specificFocus: currentP2.specificFocus,
-            trends: mergedTrends,
-            publicAnalysis: mergedPublic,
-            menuBenchmarking: mergedMenu,
-            graphs: mergedGraphs,
-            synthesis: newSynthesis,
-            concept: newConcept,
-            zoneMapDescription: currentP2.zoneMapDescription || incomingP2.zoneMapDescription,
-            references: mergedRefs,
-            weeklyReports: mergedReports
-          };
+            newPhases.phase2 = {
+              specificFocus: currentP2.specificFocus,
+              trends: mergedTrends,
+              publicAnalysis: mergedPublic,
+              menuBenchmarking: mergedMenu,
+              graphs: mergedGraphs,
+              synthesis: newSynthesis,
+              concept: newConcept,
+              zoneMapDescription: currentP2.zoneMapDescription || incomingP2.zoneMapDescription,
+              references: mergedRefs,
+              weeklyReports: mergedReports
+            };
 
-      } else if (contrib.phaseId === 'phase3') {
-          const currentP3 = newPhases.phase3 as Phase3Data;
-          const incomingP3 = contrib.content as Phase3Data;
-          // Merge logic same as before...
-          const mergedProductList = currentP3.products.list + (incomingP3.products.list ? `\n\n[${authorName}]: ${incomingP3.products.list}` : '');
-          const mergedDishes = [...currentP3.menu, ...incomingP3.menu.map(d => ({...d, author: authorName}))];
-          const mergedRefs = [...new Set([...currentP3.references, ...incomingP3.references])];
+        } else if (contrib.phaseId === 'phase3') {
+            const currentP3 = newPhases.phase3 as Phase3Data;
+            const incomingP3 = contrib.content as Phase3Data;
+            // Merge logic same as before...
+            const mergedProductList = currentP3.products.list + (incomingP3.products.list ? `\n\n[${authorName}]: ${incomingP3.products.list}` : '');
+            const mergedDishes = [...currentP3.menu, ...incomingP3.menu.map(d => ({...d, author: authorName}))];
+            const mergedRefs = [...new Set([...currentP3.references, ...incomingP3.references])];
 
-          newPhases.phase3 = {
-             ...currentP3,
-             products: { ...currentP3.products, list: mergedProductList },
-             menu: mergedDishes,
-             references: mergedRefs
-          };
+            newPhases.phase3 = {
+              ...currentP3,
+              products: { ...currentP3.products, list: mergedProductList },
+              menu: mergedDishes,
+              references: mergedRefs
+            };
 
-      } else if (contrib.phaseId === 'phase5') {
-          // Merge CoEvaluations
-          const currentP5 = newPhases.phase5 as Phase5Data;
-          const incomingP5 = contrib.content as Phase5Data;
-          
-          const mergedCoEval = [...(currentP5.coEvaluations || []), ...(incomingP5.coEvaluations || []).map(c => ({...c, reviewer: authorName}))]; // Ensure author is correct
-          
-          newPhases.phase5 = {
-            ...currentP5,
-            ...incomingP5, // Simple merge for text fields
-            coEvaluations: mergedCoEval,
-            // Preserve existing if incoming is empty, but for simplicity in this app we mostly merge arrays or overwrite texts
-            abstract: incomingP5.abstract || currentP5.abstract
-          }
+        } else if (contrib.phaseId === 'phase5') {
+            const currentP5 = newPhases.phase5 as Phase5Data;
+            const incomingP5 = contrib.content as Phase5Data;
+            const mergedCoEval = [...(currentP5.coEvaluations || []), ...(incomingP5.coEvaluations || []).map(c => ({...c, reviewer: authorName}))];
+            newPhases.phase5 = {
+              ...currentP5,
+              ...incomingP5,
+              coEvaluations: mergedCoEval,
+              abstract: incomingP5.abstract || currentP5.abstract
+            }
+        } else {
+            (newPhases as any)[contrib.phaseId] = contrib.content;
+        }
+        
+        alert(`🧩 ¡Datos de ${authorName} fusionados correctamente en ${contrib.phaseId}!`);
 
-      } else {
-          // Text phases & Simple overwrites
-          (newPhases as any)[contrib.phaseId] = contrib.content;
-      }
-      
-      alert(`¡Datos de ${authorName} importados en ${contrib.phaseId}!`);
-
-      return {
-          ...prev,
-          phases: newPhases,
-          lastModifiedBy: `Merge (${authorName})`,
-          lastModifiedDate: new Date().toISOString()
-      };
-    });
+        return {
+            ...prev,
+            phases: newPhases,
+            lastModifiedBy: `Merge (${authorName})`,
+            lastModifiedDate: new Date().toISOString()
+        };
+      });
+    }
 
     setShowImportModal(false);
     setImportCandidate(null);
@@ -596,11 +696,11 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
     
-    downloadJSON(contribution, `Aporte_${currentUser.replace(/\s+/g, '')}_${activePhaseId}.json`);
+    downloadJSON(contribution, `Aporte_${currentUser.replace(/\s+/g, '')}_${activePhaseId}_${getTimestamp()}.json`);
   };
 
   const handleExportFullProject = () => {
-    downloadJSON(projectState, `Memoria_Final_${projectState.config?.teamName.replace(/\s+/g, '_')}.json`);
+    downloadJSON(projectState, `Memoria_Final_${projectState.config?.teamName.replace(/\s+/g, '_')}_${getTimestamp()}.json`);
   };
 
   const handlePhaseUpdate = (data: any) => {
@@ -628,7 +728,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row print:bg-white">
       
-      {/* Smart Import Modal Overlay */}
+      {/* Smart Import Inspector Modal */}
       {showImportModal && (
         <SmartImportModal 
           candidate={importCandidate}
@@ -648,7 +748,7 @@ export default function App() {
             </div>
           )}
           <h2 className="text-white font-bold text-xl truncate">{projectState.config?.projectName || "Sin Nombre"}</h2>
-          <p className="text-xs text-slate-500 mt-1">{projectState.config?.teamName} • {projectState.config?.zone}</p>
+          <p className="text-xs text-slate-500 mt-1">{projectState.config?.teamName} • {projectState.config?.zone?.split('(')[0].trim()}</p>
         </div>
 
         <div className="p-4 border-b border-slate-800 bg-slate-800/50">
@@ -699,7 +799,7 @@ export default function App() {
         <div className="p-4 border-t border-slate-800 space-y-2">
           <button onClick={handleExportContribution} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-xs font-medium transition-colors"><Upload className="w-3 h-3" /> Exportar Mi Parte</button>
           <label className="cursor-pointer w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-lg text-xs font-medium transition-colors shadow-lg shadow-emerald-900/20">
-             <Download className="w-3 h-3" /> Importar Pieza (JSON)
+             <Download className="w-3 h-3" /> Importar (Pieza/Backup)
              <input type="file" accept=".json" className="hidden" onChange={(e) => e.target.files?.[0] && handleImportContributionFile(e.target.files[0])} />
           </label>
           <button onClick={handleExportFullProject} className="w-full flex items-center justify-center gap-2 bg-indigo-700 hover:bg-indigo-600 text-white py-2 rounded-lg text-xs font-medium transition-colors mt-2"><Save className="w-3 h-3" /> Guardar Backup Total</button>
@@ -855,9 +955,6 @@ export default function App() {
                   <h3 className="text-lg font-bold uppercase mb-2">3. Introducción</h3>
                   <h4 className="font-bold mb-1">3.1. Contexto y justificación del proyecto</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
-                  
-                  <h4 className="font-bold mb-1">3.2. Objetivos del proyecto</h4>
-                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.projectObjectives || "[Pendiente de redacción en Fase 5]"}</p>
                   
                   <h4 className="font-bold mb-1">3.3. Alcance y limitaciones</h4>
                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.projectScope || "[Pendiente de redacción en Fase 5]"}</p>
