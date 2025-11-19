@@ -200,6 +200,10 @@ export interface ProjectConfig {
   zone: string;
   members: Member[];
   createdAt: string;
+  // School Identity
+  schoolName?: string;
+  schoolAddress?: string;
+  schoolLogo?: string; // Base64 string
 }
 
 export interface ProjectState {

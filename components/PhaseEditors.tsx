@@ -151,9 +151,16 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       {/* Project Identity Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
         <div className="bg-slate-800 p-6 text-white flex flex-col md:flex-row justify-between items-start gap-4">
-          <div>
-            <h2 className="text-2xl font-bold">{config.projectName || 'Proyecto Sin Nombre'}</h2>
-            <p className="text-slate-400 mt-1 text-lg">{config.teamName || 'Equipo Sin Nombre'}</p>
+          <div className="flex items-center gap-4">
+            {config.schoolLogo && (
+               <div className="bg-white p-1 rounded-lg w-16 h-16 flex items-center justify-center flex-shrink-0">
+                  <img src={config.schoolLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+               </div>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold">{config.projectName || 'Proyecto Sin Nombre'}</h2>
+              <p className="text-slate-400 mt-1 text-lg">{config.teamName || 'Equipo Sin Nombre'}</p>
+            </div>
           </div>
           <div className="text-left md:text-right">
             <div className="bg-indigo-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 inline-block">

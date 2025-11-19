@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, ROLE_DEFINITIONS, ODS_LIST } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles } from 'lucide-react';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin } from 'lucide-react';
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
@@ -135,7 +135,10 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
     deliveryDate: '',
     zone: '',
     members: ROLE_DEFINITIONS.map(def => ({ name: '', role: def.role, tasks: '' })),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    schoolName: 'IES La Flota',
+    schoolAddress: 'Paseo Científico Gabriel Ciscar, nº 1, 30007 Murcia',
+    schoolLogo: ''
   });
 
   const updateMember = (index: number, field: string, value: string) => {
@@ -148,6 +151,17 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
     if (e.target.files?.[0]) onImport(e.target.files[0]);
   };
   
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setConfig(prev => ({ ...prev, schoolLogo: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const isFormValid = config.projectName && config.teamName && config.zone && config.members.every(m => m.name.trim().length > 0);
 
   return (
@@ -168,6 +182,47 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
         </div>
 
         <div className="space-y-8">
+          {/* School Identity */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+             <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+               <GraduationCap className="w-6 h-6 text-indigo-600" />
+               <h3 className="text-xl font-bold text-slate-800">Identidad Corporativa del Centro</h3>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div className="md:col-span-3 flex flex-col items-center gap-3">
+                   <div className="w-32 h-32 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center bg-slate-50 overflow-hidden relative group">
+                      {config.schoolLogo ? (
+                        <>
+                          <img src={config.schoolLogo} alt="Logo IES" className="w-full h-full object-contain p-2" />
+                          <button 
+                            onClick={() => setConfig(c => ({...c, schoolLogo: ''}))}
+                            className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-6 h-6" />
+                          </button>
+                        </>
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-slate-300" />
+                      )}
+                   </div>
+                   <label className="cursor-pointer bg-indigo-50 text-indigo-600 px-3 py-2 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors">
+                      Subir Logo IES
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                   </label>
+                </div>
+                <div className="md:col-span-9 space-y-4">
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Centro Educativo</label>
+                      <input className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50" value={config.schoolName} onChange={(e) => setConfig({...config, schoolName: e.target.value})} />
+                   </div>
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Dirección Oficial</label>
+                      <input className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50" value={config.schoolAddress} onChange={(e) => setConfig({...config, schoolAddress: e.target.value})} />
+                   </div>
+                </div>
+             </div>
+          </div>
+
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
               <LayoutDashboard className="w-6 h-6 text-indigo-600" />
@@ -585,6 +640,13 @@ export default function App() {
 
       <aside className="w-full md:w-72 bg-slate-900 text-slate-300 flex flex-col h-screen sticky top-0 no-print z-20">
         <div className="p-6 border-b border-slate-800">
+          {projectState.config?.schoolLogo && (
+            <div className="mb-4 w-full flex justify-center">
+               <div className="bg-white rounded-lg p-2 w-24 h-24 flex items-center justify-center overflow-hidden">
+                  <img src={projectState.config.schoolLogo} alt="Logo Centro" className="max-w-full max-h-full object-contain" />
+               </div>
+            </div>
+          )}
           <h2 className="text-white font-bold text-xl truncate">{projectState.config?.projectName || "Sin Nombre"}</h2>
           <p className="text-xs text-slate-500 mt-1">{projectState.config?.teamName} • {projectState.config?.zone}</p>
         </div>
@@ -699,9 +761,13 @@ export default function App() {
           {view === 'curriculum' && (
             <div className="space-y-6">
               <div className="bg-slate-800 text-white p-6 rounded-xl shadow-md mb-8 flex items-center gap-4">
-                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl">🏛️</div>
+                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl">
+                    {projectState.config?.schoolLogo ? (
+                       <img src={projectState.config.schoolLogo} className="w-12 h-12 object-contain" />
+                    ) : '🏛️'}
+                 </div>
                  <div>
-                    <h2 className="text-xl font-bold uppercase tracking-widest">Región de Murcia</h2>
+                    <h2 className="text-xl font-bold uppercase tracking-widest">{projectState.config?.schoolName || "Región de Murcia"}</h2>
                     <p className="text-slate-300 text-sm">Consejería de Educación y Formación Profesional</p>
                  </div>
               </div>
@@ -753,12 +819,23 @@ export default function App() {
                </div>
                
                {/* 1. PORTADA */}
-               <div className="text-center pb-20 mb-10 break-after-page flex flex-col justify-center h-[80vh]">
-                  <h1 className="text-4xl font-bold mb-8 uppercase">{projectState.config?.projectName}</h1>
-                  <h2 className="text-xl mb-2">Ciclo Formativo GM Cocina y Gastronomía</h2>
-                  <h3 className="text-lg text-slate-600 mb-12">{projectState.config?.zone}</h3>
+               <div className="text-center pb-20 mb-10 break-after-page flex flex-col justify-center h-[90vh] relative">
+                  {/* School Header */}
+                  <div className="absolute top-0 left-0 w-full flex flex-col items-center">
+                     {projectState.config?.schoolLogo && (
+                       <img src={projectState.config.schoolLogo} alt="Logo IES" className="h-32 mb-4 object-contain" />
+                     )}
+                     <h3 className="text-xl font-bold uppercase text-slate-800">{projectState.config?.schoolName}</h3>
+                     <p className="text-sm text-slate-600">{projectState.config?.schoolAddress}</p>
+                  </div>
+
+                  <div className="mt-40">
+                    <h1 className="text-4xl font-bold mb-8 uppercase">{projectState.config?.projectName}</h1>
+                    <h2 className="text-xl mb-2">Ciclo Formativo GM Cocina y Gastronomía</h2>
+                    <h3 className="text-lg text-slate-600 mb-12">{projectState.config?.zone}</h3>
+                  </div>
                   
-                  <div className="text-left max-w-md mx-auto w-full border-t border-slate-300 pt-8 mt-8">
+                  <div className="text-left max-w-md mx-auto w-full border-t border-slate-300 pt-8 mt-20">
                      <p className="mb-1 font-bold">Integrantes del Equipo ({projectState.config?.teamName}):</p>
                      <ul className="mb-8 space-y-1">
                        {projectState.config?.members.map(m => (<li key={m.name} className="flex justify-between"><span>{m.name}</span> <span className="italic text-slate-500 text-sm">{m.role}</span></li>))}
