@@ -1178,16 +1178,20 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                              onChange={(e) => setNewEval({...newEval, target: e.target.value})}
                           >
                              <option value="">-- Seleccionar Compañero --</option>
-                             {config?.members.map((m: any) => (
+                             {config?.members && config.members.length > 0 ? (
+                                config.members.map((m: any) => (
                                 <option 
                                   key={m.name} 
                                   value={m.name} 
                                   disabled={m.name === currentUser}
                                   className={m.name === currentUser ? 'text-slate-400 italic' : ''}
                                 >
-                                  {m.name} ({m.role}) {m.name === currentUser ? '(Tú)' : ''}
+                                  {m.name} ({m.role}) {m.name === currentUser ? '(Tú - No te puedes autoevaluar)' : ''}
                                 </option>
-                             ))}
+                             ))
+                             ) : (
+                                <option disabled>No hay miembros configurados</option>
+                             )}
                           </select>
                        </div>
                        <div>

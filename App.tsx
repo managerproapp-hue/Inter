@@ -2,60 +2,127 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, ROLE_DEFINITIONS, ODS_LIST } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles } from 'lucide-react';
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
 
 const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession: boolean, onResume: () => void, onClear: () => void }> = ({ onSelectMode, hasSavedSession, onResume, onClear }) => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 to-slate-900 text-white px-4 relative overflow-hidden">
+  <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-x-hidden">
     
-    {/* Background Decor */}
-    <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-emerald-500 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-3xl"></div>
+    {/* Hero Section */}
+    <div className="relative pt-20 pb-16 px-6 border-b border-slate-800">
+        {/* Background Effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-[100px]" />
+            <div className="absolute bottom-0 right-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-900/50 border border-indigo-700 text-indigo-300 text-xs font-bold tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4">
+             <Sparkles className="w-3 h-3" /> <span>NUEVA VERSIÓN: COEVALUACIÓN DIABÓLICA</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+             Gastro<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Sostenible</span>
+          </h1>
+          
+          <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+             La plataforma definitiva para proyectos de hostelería. <br/>
+             <span className="text-indigo-400 font-bold">Metodología Flujo Puzle</span>: Trabaja offline, fusiona aportes y genera la memoria final automáticamente.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {hasSavedSession ? (
+              <div className="flex flex-col gap-3 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4">
+                 <button 
+                  onClick={onResume}
+                  className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/30 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-5 h-5" /> Continuar Sesión
+                </button>
+                <button 
+                  onClick={() => { if(window.confirm("¿Seguro que quieres borrar los datos guardados y empezar de cero?")) onClear(); }}
+                  className="px-4 py-2 text-slate-500 hover:text-red-400 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Borrar y Empezar de Nuevo
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => onSelectMode(AppMode.SETUP)}
+                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/50 transition-all transform hover:scale-105"
+              >
+                Comenzar Nuevo Proyecto
+              </button>
+            )}
+          </div>
+        </div>
     </div>
 
-    <div className="max-w-2xl text-center space-y-8 z-10">
-      <div className="flex justify-center mb-6">
-        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/20 ring-4 ring-emerald-500/50">
-           <span className="text-5xl">🥗</span>
-        </div>
-      </div>
-      <div>
-        <h1 className="text-6xl font-extrabold tracking-tight mb-2">Gastro<span className="text-emerald-400">Sostenible</span></h1>
-        <h2 className="text-2xl text-indigo-200 font-light">Gestor de Proyectos de Hostelería</h2>
-      </div>
-      
-      <p className="text-lg text-slate-300 leading-relaxed max-w-lg mx-auto">
-        Plataforma offline-first con metodología Flujo Puzle. Gestiona roles, integra aportes y genera tu memoria final automáticamente.
-      </p>
-      
-      <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-        {hasSavedSession ? (
-          <div className="flex flex-col gap-3 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-4">
-             <button 
-              onClick={onResume}
-              className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/50 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-5 h-5" /> Continuar Sesión Anterior
-            </button>
-            <button 
-              onClick={() => { if(window.confirm("¿Seguro que quieres borrar los datos guardados y empezar de cero?")) onClear(); }}
-              className="px-4 py-2 text-slate-400 hover:text-red-400 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" /> Borrar y Empezar de Nuevo
-            </button>
+    {/* Workflow Explanation (Puzzle Flow) */}
+    <div className="bg-slate-950 py-20 px-6 flex-1">
+       <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+             <h2 className="text-3xl font-bold mb-4">¿Cómo funciona el Flujo Puzle?</h2>
+             <p className="text-slate-400 max-w-2xl mx-auto">
+                Olvídate de conflictos de versiones. Cada pieza tiene su lugar y su momento.
+             </p>
           </div>
-        ) : (
-          <button 
-            onClick={() => onSelectMode(AppMode.SETUP)}
-            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/50 transition-all transform hover:scale-105"
-          >
-            Comenzar Nuevo Proyecto
-          </button>
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+             {/* Connector Line (Desktop only) */}
+             <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-900 via-emerald-900 to-indigo-900 -z-10" />
+             
+             {/* Step 1: Coordinator */}
+             <div className="relative bg-slate-900 p-6 rounded-2xl border border-slate-800 hover:border-indigo-500 transition-colors group">
+                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-900/50 group-hover:scale-110 transition-transform">
+                   <Users className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-indigo-200">1. El Arquitecto</h3>
+                <p className="text-sm text-slate-400 mb-4">El Coordinador crea el equipo y define los roles en la Fase 1.</p>
+                <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs font-mono text-emerald-400 flex items-center gap-2">
+                   <FileJson className="w-3 h-3" /> config.json
+                </div>
+             </div>
+
+             {/* Step 2: Work */}
+             <div className="relative bg-slate-900 p-6 rounded-2xl border border-slate-800 hover:border-emerald-500 transition-colors group">
+                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-900/50 group-hover:scale-110 transition-transform">
+                   <LayoutDashboard className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-emerald-200">2. Especialistas</h3>
+                <p className="text-sm text-slate-400 mb-4">Cada alumno importa la config y trabaja en su fase asignada.</p>
+                <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs font-mono text-emerald-400 flex items-center gap-2">
+                   <Upload className="w-3 h-3" /> aporte_mi_parte.json
+                </div>
+             </div>
+
+             {/* Step 3: Merge */}
+             <div className="relative bg-slate-900 p-6 rounded-2xl border border-slate-800 hover:border-purple-500 transition-colors group">
+                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-purple-900/50 group-hover:scale-110 transition-transform">
+                   <RotateCcw className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-purple-200">3. Fusión</h3>
+                <p className="text-sm text-slate-400 mb-4">El Coordinador importa los aportes. La App los une automáticamente.</p>
+                <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs font-mono text-emerald-400 flex items-center gap-2">
+                   <CheckCircle className="w-3 h-3" /> Integración
+                </div>
+             </div>
+
+             {/* Step 4: Result */}
+             <div className="relative bg-slate-900 p-6 rounded-2xl border border-slate-800 hover:border-orange-500 transition-colors group">
+                <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-orange-900/50 group-hover:scale-110 transition-transform">
+                   <Printer className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-orange-200">4. Memoria Oficial</h3>
+                <p className="text-sm text-slate-400 mb-4">Revisión final, coevaluación y generación del PDF normativo.</p>
+                <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs font-mono text-white flex items-center gap-2">
+                   <BookOpen className="w-3 h-3" /> Memoria.pdf
+                </div>
+             </div>
+          </div>
+       </div>
     </div>
   </div>
 );
@@ -570,7 +637,7 @@ export default function App() {
         <div className="p-4 border-t border-slate-800 space-y-2">
           <button onClick={handleExportContribution} className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-xs font-medium transition-colors"><Upload className="w-3 h-3" /> Exportar Mi Parte</button>
           <label className="cursor-pointer w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-lg text-xs font-medium transition-colors shadow-lg shadow-emerald-900/20">
-             <Download className="w-3 h-3" /> Importar Aporte (JSON)
+             <Download className="w-3 h-3" /> Importar Pieza (JSON)
              <input type="file" accept=".json" className="hidden" onChange={(e) => e.target.files?.[0] && handleImportContributionFile(e.target.files[0])} />
           </label>
           <button onClick={handleExportFullProject} className="w-full flex items-center justify-center gap-2 bg-indigo-700 hover:bg-indigo-600 text-white py-2 rounded-lg text-xs font-medium transition-colors mt-2"><Save className="w-3 h-3" /> Guardar Backup Total</button>
