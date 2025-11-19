@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phase2Data, Phase3Data, Phase4Data, DishCategory, MenuDish, DishEval } from '../types';
-import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar } from 'lucide-react';
+import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost } from '../types';
+import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5 } from '../constants';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3 } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -11,6 +11,7 @@ interface EditorProps {
   isReadOnly?: boolean;
   projectContext: string;
   config?: any;
+  phase3Data?: Phase3Data; // Phase 4 needs access to Phase 3 menu
 }
 
 // --- Helper Component: Multi-Select ODS Dropdown ---
@@ -142,7 +143,7 @@ export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadO
 
 // --- Phase 1 Editor (Config Display + Text) ---
 export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext, config }) => {
-  if (!config) return <div className="text-red-500 p-4">Error: No se cargó la configuración.</div>;
+  if (!config) return <div className="text-red-500 p-4">Error: No se cargó la configuración. Reinicia el proyecto.</div>;
 
   return (
     <div className="space-y-8 h-full flex flex-col pb-10">
@@ -192,7 +193,7 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       <div className="flex-1 flex flex-col min-h-[300px]">
         <div className="mb-4">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-             <Book className="w-5 h-5 text-indigo-600" /> Definición del Contexto y Justificación
+             <Book className="w-5 h-5 text-indigo-600" /> Contexto y Justificación (Apartado 3.1)
           </h3>
           <p className="text-sm text-slate-500">
             Redacta aquí la introducción de tu proyecto, explicando por qué habéis elegido este concepto y cómo se adapta a la zona asignada.
@@ -212,7 +213,13 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 
 // --- Structured Phase 2 Editor (Updated for Tarea 2) ---
 export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext }) => {
-  const state: Phase2Data = data || INITIAL_PHASE_2;
+  // Ensure concept fields exist even if loading old data
+  const state: Phase2Data = { 
+    ...INITIAL_PHASE_2, 
+    ...data, 
+    concept: { ...INITIAL_PHASE_2.concept, ...(data?.concept || {}) } 
+  };
+  
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [activeTab, setActiveTab] = useState<'PartA' | 'PartB'>('PartA');
 
@@ -272,7 +279,7 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
           onClick={() => setActiveTab('PartB')}
           className={`px-4 py-2 font-bold rounded-t-lg transition-colors ${activeTab === 'PartB' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          🅱️ Informe Grupal
+          🅱️ Modelo de Negocio (Grupal)
         </button>
       </div>
 
@@ -283,19 +290,20 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
              <Search className="w-5 h-5 flex-shrink-0 mt-0.5" />
              <div>
                <p className="font-bold">Tarea 2 - Análisis Individual:</p>
-               <p>Completa tu investigación sobre tendencias, público y 5 cartas de ejemplo.</p>
+               <p>Investiga el mercado real de la zona para detectar huecos que vuestro proyecto pueda cubrir.</p>
              </div>
            </div>
 
            {/* Specific Focus */}
            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Enfoque específico asignado (ej. aperitivos, vinos, postres)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Enfoque: Análisis de Tendencias de la Zona</label>
               <input 
                 className="w-full p-3 border border-slate-300 rounded bg-slate-50"
-                placeholder="Escribe aquí tu rol específico..."
+                placeholder="Ej: En la zona predominan los asadores, pero falta oferta vegana o de km0..."
                 value={state.specificFocus}
                 onChange={(e) => updateField('specificFocus', e.target.value)}
               />
+              <p className="text-xs text-slate-400 mt-1">Analiza las tendencias generales de los restaurantes (competencia) en tu zona asignada.</p>
            </div>
 
            {/* Trends & Target Audience */}
@@ -381,20 +389,6 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                 ))}
               </div>
            </div>
-
-           {/* Graph */}
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-             <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2"><PieChart className="w-4 h-4"/> Gráfico Simple</h3>
-                <button onClick={addGraph} className="text-xs text-indigo-600"><Plus className="w-3 h-3"/></button>
-             </div>
-             {state.graphs.map((g, idx) => (
-                <div key={idx} className="mb-2">
-                   <input className="w-full p-3 border rounded bg-slate-50" placeholder="Descripción del gráfico (ej. Tabla de preferencias)..." 
-                     value={g.description} onChange={(e) => {const n=[...state.graphs]; n[idx].description=e.target.value; updateField('graphs', n)}} />
-                </div>
-             ))}
-           </div>
         </div>
       )}
 
@@ -402,55 +396,105 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       {activeTab === 'PartB' && (
         <div className="space-y-8">
            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 text-sm text-emerald-800 flex gap-3 items-start">
-             <Target className="w-5 h-5 flex-shrink-0 mt-0.5" />
+             <Store className="w-5 h-5 flex-shrink-0 mt-0.5" />
              <div>
-               <p className="font-bold">Informe Grupal (Consolidación):</p>
-               <p>Sintetiza las tendencias individuales y define el concepto final.</p>
+               <p className="font-bold">Informe Grupal: Modelo de Negocio</p>
+               <p>Definid aquí el concepto final del restaurante, alineado con la zona y las materias primas analizadas.</p>
              </div>
            </div>
 
-           {/* 1. Synthesis */}
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-             <h3 className="font-bold text-slate-800 mb-2">Síntesis del Análisis (Tendencias y Cartas)</h3>
-             <textarea 
-               className="w-full p-4 border border-slate-200 rounded-lg h-32 text-sm"
-               placeholder="Ej: En Cartagena el público valora los mariscos sostenibles..."
-               value={state.synthesis}
-               onChange={(e) => updateField('synthesis', e.target.value)}
-             />
-           </div>
-
-           {/* 2. Concept */}
+           {/* 2. Concept - Business Model Canvas Lite */}
            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-emerald-500">
-              <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-xl font-bold text-slate-800">Concepto del Restaurante</h3>
-                 <button onClick={handleConceptAI} className="text-indigo-600 text-sm flex items-center gap-1 hover:underline"><Sparkles className="w-4 h-4"/> Ayuda IA</button>
+              <div className="flex justify-between items-center mb-6">
+                 <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Store className="w-5 h-5 text-emerald-600"/> Definición del Restaurante Ficticio</h3>
+                 <button onClick={handleConceptAI} className="text-indigo-600 text-sm flex items-center gap-1 hover:underline"><Sparkles className="w-4 h-4"/> Ideas con IA</button>
               </div>
               
-              {aiSuggestion && <div className="mb-4 p-3 bg-indigo-50 text-sm rounded text-indigo-800">{aiSuggestion}</div>}
+              {aiSuggestion && <div className="mb-6 p-3 bg-indigo-50 text-sm rounded text-indigo-800 border border-indigo-100">{aiSuggestion}</div>}
 
-              <div className="space-y-4">
-                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Descripción del Concepto</label>
-                    <textarea className="w-full p-3 border rounded h-20 text-sm" value={state.concept.description}
-                       onChange={(e) => updateField('concept', {...state.concept, description: e.target.value})} placeholder="Ej: Restaurante costero sostenible..."/>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                 <div className="col-span-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Nombre del Restaurante</label>
+                    <input 
+                      className="w-full p-3 border border-slate-300 rounded-lg text-lg font-serif bg-slate-50 focus:ring-2 focus:ring-emerald-500" 
+                      value={state.concept.name}
+                      onChange={(e) => updateField('concept', {...state.concept, name: e.target.value})} 
+                      placeholder="Ej: La Huerta Viva"
+                    />
                  </div>
+                 
                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Plato Inicial (Ejemplo)</label>
-                    <input className="w-full p-3 border rounded text-sm" value={state.concept.initialDish}
-                       onChange={(e) => updateField('concept', {...state.concept, initialDish: e.target.value})} placeholder="Ej: Aperitivo de mejillones Km0..."/>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Tipo de Establecimiento</label>
+                    <input 
+                      className="w-full p-2 border border-slate-300 rounded bg-white" 
+                      value={state.concept.restaurantType}
+                      onChange={(e) => updateField('concept', {...state.concept, restaurantType: e.target.value})} 
+                      placeholder="Ej: Arrocería, Gastrobar, Marisquería..."
+                    />
                  </div>
+
                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">ODS Vinculados</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Estilo de Cocina</label>
+                    <input 
+                      className="w-full p-2 border border-slate-300 rounded bg-white" 
+                      value={state.concept.culinaryStyle}
+                      onChange={(e) => updateField('concept', {...state.concept, culinaryStyle: e.target.value})} 
+                      placeholder="Ej: Tradicional renovada, Fusión, Km0..."
+                    />
+                 </div>
+
+                 <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Cliente Objetivo</label>
+                    <input 
+                      className="w-full p-2 border border-slate-300 rounded bg-white" 
+                      value={state.concept.targetAudience}
+                      onChange={(e) => updateField('concept', {...state.concept, targetAudience: e.target.value})} 
+                      placeholder="Ej: Turistas, familias, nivel adquisitivo medio-alto..."
+                    />
+                 </div>
+
+                 <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center gap-1"><DollarSign className="w-4 h-4"/> Precio Medio Cubierto</label>
+                    <input 
+                      className="w-full p-2 border border-slate-300 rounded bg-white" 
+                      value={state.concept.averagePrice}
+                      onChange={(e) => updateField('concept', {...state.concept, averagePrice: e.target.value})} 
+                      placeholder="Ej: 35€ - 45€"
+                    />
+                 </div>
+
+                 <div className="col-span-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Descripción del Concepto (Narrativa)</label>
+                    <textarea 
+                       className="w-full p-3 border rounded h-20 text-sm" 
+                       value={state.concept.description}
+                       onChange={(e) => updateField('concept', {...state.concept, description: e.target.value})} 
+                       placeholder="Describe brevemente la experiencia y el ambiente..."
+                    />
+                 </div>
+
+                 <div className="col-span-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">ODS Vinculados al Negocio</label>
                     <ODSSelector 
                        selected={state.concept.linkedODS}
                        onChange={(val) => updateField('concept', {...state.concept, linkedODS: val as string[]})}
                        mode="array"
                        min={2}
                     />
-                    <p className="text-xs text-slate-400 mt-1">Selecciona al menos 2 objetivos clave.</p>
+                    <p className="text-xs text-slate-400 mt-1">Selecciona al menos 2 objetivos que definan la ética del restaurante.</p>
                  </div>
               </div>
+           </div>
+           
+           {/* Synthesis */}
+           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+             <h3 className="font-bold text-slate-800 mb-2">Síntesis del Análisis de Mercado</h3>
+             <textarea 
+               className="w-full p-4 border border-slate-200 rounded-lg h-24 text-sm"
+               placeholder="Justificación: ¿Por qué este modelo funciona en esta zona según vuestro análisis?"
+               value={state.synthesis}
+               onChange={(e) => updateField('synthesis', e.target.value)}
+             />
            </div>
 
            {/* 3. Map & References */}
@@ -477,39 +521,6 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                  </ul>
               </div>
            </div>
-
-           {/* 4. Weekly Reports */}
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                 <h3 className="font-bold text-slate-800">Reportes Semanales</h3>
-                 <button onClick={addWeeklyReport} className="text-emerald-600 text-sm font-medium flex items-center gap-1"><Plus className="w-4 h-4"/> Añadir Semana</button>
-              </div>
-              <div className="space-y-4">
-                 {state.weeklyReports.map((w, idx) => (
-                    <div key={idx} className="border p-4 rounded-lg bg-slate-50">
-                       <input className="font-bold bg-transparent border-b mb-2 w-full" value={w.week}
-                          onChange={(e) => {const n=[...state.weeklyReports]; n[idx].week=e.target.value; updateField('weeklyReports', n)}} />
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                             <label className="block text-xs font-bold text-slate-500 uppercase">Avances</label>
-                             <textarea className="w-full p-2 border rounded h-16" value={w.advances}
-                               onChange={(e) => {const n=[...state.weeklyReports]; n[idx].advances=e.target.value; updateField('weeklyReports', n)}} />
-                          </div>
-                          <div>
-                             <label className="block text-xs font-bold text-slate-500 uppercase">Problemas</label>
-                             <textarea className="w-full p-2 border rounded h-16" value={w.problems}
-                               onChange={(e) => {const n=[...state.weeklyReports]; n[idx].problems=e.target.value; updateField('weeklyReports', n)}} />
-                          </div>
-                          <div>
-                             <label className="block text-xs font-bold text-slate-500 uppercase">Contribuciones</label>
-                             <textarea className="w-full p-2 border rounded h-16" value={w.contributions}
-                               onChange={(e) => {const n=[...state.weeklyReports]; n[idx].contributions=e.target.value; updateField('weeklyReports', n)}} />
-                          </div>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-           </div>
         </div>
       )}
     </div>
@@ -534,12 +545,12 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       category,
       name: '',
       ingredients: '',
-      elaboration: '', // Initialize empty
+      elaboration: '',
       allergens: '',
       techniques: '',
       presentation: '',
       ods: '',
-      author: '' // Will be filled implicitly if not set
+      author: ''
     };
     updateField('menu', [...state.menu, newDish]);
   };
@@ -602,25 +613,6 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                  <textarea className="w-full p-3 border rounded-lg h-24 text-sm" placeholder="Ej: Baja huella de carbono por transporte..." value={state.products.impactAnalysis} onChange={(e) => updateField('products', {...state.products, impactAnalysis: e.target.value})} />
               </div>
            </div>
-
-           <div>
-             <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-slate-700">Fuentes (Mínimo 3)</label>
-                <button onClick={() => updateField('products', {...state.products, sources: [...state.products.sources, '']})} className="text-xs text-indigo-600 font-bold">+ Añadir Fuente</button>
-             </div>
-             <div className="space-y-2">
-                {state.products.sources.map((s, i) => (
-                   <div key={i} className="flex gap-2">
-                      <span className="text-slate-400 text-sm pt-2">{i+1}.</span>
-                      <input className="flex-1 p-2 border rounded text-sm" value={s} onChange={(e) => {
-                         const n = [...state.products.sources]; n[i] = e.target.value;
-                         updateField('products', {...state.products, sources: n});
-                      }} />
-                   </div>
-                ))}
-                {state.products.sources.length === 0 && <p className="text-slate-400 text-xs italic">Añade fuentes bibliográficas.</p>}
-             </div>
-           </div>
         </div>
       )}
 
@@ -631,7 +623,7 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
              <Utensils className="w-5 h-5 flex-shrink-0"/>
              <div>
                <p className="font-bold">Instrucciones Grupales:</p>
-               <p>Cada miembro debe añadir sus propios platos. Al importar el archivo de un compañero, sus platos se fusionarán aquí. Objetivo total: 20 Platos.</p>
+               <p>Cada miembro debe añadir sus propios platos. Objetivo total: 20 Platos.</p>
              </div>
           </div>
 
@@ -651,10 +643,8 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                       {dishes.map((dish) => (
                          <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative shadow-sm">
                             <button onClick={() => removeDish(dish.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
-                            {dish.author && <span className="absolute top-3 right-10 bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1"><Users className="w-3 h-3"/> {dish.author}</span>}
                             
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                               {/* Left: Image Upload */}
                                <div className="col-span-1 lg:col-span-3 flex flex-col items-center gap-2">
                                   <div className="w-full aspect-square bg-slate-200 rounded-lg flex items-center justify-center overflow-hidden border border-slate-300 relative">
                                      {dish.image ? (
@@ -677,7 +667,6 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                   </label>
                                </div>
 
-                               {/* Right: Details */}
                                <div className="col-span-1 lg:col-span-9 space-y-3">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      <div>
@@ -710,9 +699,9 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                         </div>
                                      </div>
                                   </div>
-
+                                  
                                   <div>
-                                     <label className="text-xs font-bold text-slate-500 uppercase">Elaboración (Paso a paso)</label>
+                                     <label className="text-xs font-bold text-slate-500 uppercase">Elaboración</label>
                                      <textarea 
                                         className="w-full p-2 border rounded bg-white text-sm h-20 resize-y" 
                                         value={dish.elaboration} 
@@ -720,16 +709,10 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                         placeholder="Describa brevemente la elaboración..." 
                                      />
                                   </div>
-                                  
-                                  <div>
-                                     <label className="text-xs font-bold text-slate-500 uppercase">Presentación</label>
-                                     <input className="w-full p-2 border rounded bg-white text-sm" value={dish.presentation} onChange={(e) => updateDish(dish.id, 'presentation', e.target.value)} placeholder="Descripción visual..." />
-                                  </div>
                                </div>
                             </div>
                          </div>
                       ))}
-                      {dishes.length === 0 && <p className="text-center text-sm text-slate-400 py-4 italic">No hay platos en esta categoría.</p>}
                    </div>
                 </div>
              );
@@ -746,7 +729,6 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
               <div className="space-y-2">
                  <label className="font-bold text-slate-700 flex items-center gap-2"><Image className="w-4 h-4"/> Enlace Canva / Imagen</label>
                  <input className="w-full p-3 border rounded-lg" placeholder="Pega el enlace a tu diseño de Canva..." value={state.visual.canvaDescription} onChange={(e) => updateField('visual', {...state.visual, canvaDescription: e.target.value})} />
-                 <p className="text-xs text-slate-500">Incluye una descripción breve si no tienes el enlace final.</p>
               </div>
               
               <div className="space-y-2">
@@ -757,25 +739,7 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 
            <div className="space-y-2">
               <label className="font-bold text-slate-700">Versión Física (Descripción)</label>
-              <textarea className="w-full p-3 border rounded-lg h-24" placeholder="Ej: Papel reciclado con textura, tintas ecológicas..." value={state.visual.physicalDescription} onChange={(e) => updateField('visual', {...state.visual, physicalDescription: e.target.value})} />
-           </div>
-
-           <div className="border-t pt-6 mt-6">
-               <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-slate-700">Referencias Bibliográficas (Min 5)</h4>
-                  <button onClick={addReference} className="text-xs text-indigo-600 font-bold">+ Añadir</button>
-               </div>
-               <div className="space-y-2">
-                  {state.references.map((r, i) => (
-                     <div key={i} className="flex gap-2">
-                        <span className="text-slate-400 text-sm pt-2">{i+1}.</span>
-                        <input className="flex-1 p-2 border rounded text-sm" value={r} onChange={(e) => {
-                           const n = [...state.references]; n[i] = e.target.value;
-                           updateField('references', n);
-                        }} />
-                     </div>
-                  ))}
-               </div>
+              <textarea className="w-full p-3 border rounded-lg h-24" placeholder="Ej: Papel reciclado con textura..." value={state.visual.physicalDescription} onChange={(e) => updateField('visual', {...state.visual, physicalDescription: e.target.value})} />
            </div>
         </div>
       )}
@@ -783,115 +747,371 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   );
 };
 
-// --- Structured Phase 4 Editor ---
-export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly }) => {
+// --- Structured Phase 4 Editor (Execution & Costs) ---
+export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, phase3Data }) => {
   const state: Phase4Data = data || INITIAL_PHASE_4;
+  const [activeTab, setActiveTab] = useState<'Costs' | 'Execution'>('Costs');
 
   const updateField = (field: keyof Phase4Data, value: any) => {
     onUpdate({ ...state, [field]: value });
   };
 
-  const addDish = () => {
+  // Financial Helpers
+  const addIngredient = (dishId: string) => {
+     const financials = [...(state.financials || [])];
+     let entry = financials.find(f => f.dishId === dishId);
+     
+     if (!entry) {
+        entry = { dishId, totalCost: 0, sellingPrice: 0, ingredients: [] };
+        financials.push(entry);
+     }
+     
+     entry.ingredients.push({ name: '', quantity: '', price: 0 });
+     updateField('financials', financials);
+  };
+
+  const updateIngredient = (dishId: string, idx: number, field: keyof IngredientCost, val: any) => {
+     const financials = [...(state.financials || [])];
+     const entry = financials.find(f => f.dishId === dishId);
+     if(entry) {
+       (entry.ingredients[idx] as any)[field] = val;
+       // Recalculate total
+       entry.totalCost = entry.ingredients.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+       updateField('financials', financials);
+     }
+  };
+
+  // Dish Eval Helpers
+  const addDishEval = () => {
     const newDish: DishEval = { id: Date.now().toString(), dishName: '', expectation: '', reality: '', waste: '' };
     updateField('dishes', [...state.dishes, newDish]);
   };
 
-  const removeDish = (id: string) => {
+  const removeDishEval = (id: string) => {
     updateField('dishes', state.dishes.filter(d => d.id !== id));
   };
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* Dishes Evaluation */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-slate-800">Autoevaluación de Platos</h3>
-          {!isReadOnly && (
-            <button onClick={addDish} className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
-              <Plus className="w-4 h-4" /> Evaluar Plato
-            </button>
-          )}
-        </div>
-        <div className="grid gap-6">
-          {state.dishes.map((dish, idx) => (
-            <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative group">
-              {!isReadOnly && (
-                <button onClick={() => removeDish(dish.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              <div className="mb-3">
-                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Nombre del Plato</label>
-                <input
-                  className="w-full p-2 border rounded bg-white"
-                  value={dish.dishName}
-                  onChange={(e) => {
-                    const newDishes = [...state.dishes];
-                    newDishes[idx].dishName = e.target.value;
-                    updateField('dishes', newDishes);
-                  }}
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Expectativa</label>
-                  <textarea
-                    className="w-full p-2 border rounded bg-white h-20 text-sm"
-                    value={dish.expectation}
-                    onChange={(e) => {
-                      const newDishes = [...state.dishes];
-                      newDishes[idx].expectation = e.target.value;
-                      updateField('dishes', newDishes);
-                    }}
-                    disabled={isReadOnly}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Realidad (Resultado)</label>
-                  <textarea
-                    className="w-full p-2 border rounded bg-white h-20 text-sm"
-                    value={dish.reality}
-                    onChange={(e) => {
-                      const newDishes = [...state.dishes];
-                      newDishes[idx].reality = e.target.value;
-                      updateField('dishes', newDishes);
-                    }}
-                    disabled={isReadOnly}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Análisis de Mermas</label>
-                  <textarea
-                    className="w-full p-2 border rounded bg-white h-20 text-sm"
-                    value={dish.waste}
-                    onChange={(e) => {
-                      const newDishes = [...state.dishes];
-                      newDishes[idx].waste = e.target.value;
-                      updateField('dishes', newDishes);
-                    }}
-                    disabled={isReadOnly}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-          {state.dishes.length === 0 && <p className="text-slate-400 text-sm italic text-center">No hay platos evaluados.</p>}
-        </div>
+    <div className="space-y-6 pb-10">
+      <div className="flex gap-4 mb-4 border-b border-slate-200 pb-1">
+        <button 
+          onClick={() => setActiveTab('Costs')}
+          className={`px-4 py-2 font-bold rounded-t-lg transition-colors ${activeTab === 'Costs' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          1. Creación de Costes (Escandallos)
+        </button>
+        <button 
+          onClick={() => setActiveTab('Execution')}
+          className={`px-4 py-2 font-bold rounded-t-lg transition-colors ${activeTab === 'Execution' ? 'bg-blue-50 text-blue-800 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          2. Ejecución y Cierre
+        </button>
       </div>
 
-      {/* Brigade Report */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-         <h3 className="text-lg font-bold text-slate-800 mb-2">Informe de Brigada</h3>
-         <p className="text-sm text-slate-500 mb-4">Describe el rendimiento del equipo, problemas de comunicación y soluciones aplicadas.</p>
-         <textarea
-            className="w-full p-4 border rounded-lg h-40 bg-slate-50 focus:bg-white transition-colors"
-            value={state.brigadeReport}
-            onChange={(e) => updateField('brigadeReport', e.target.value)}
-            placeholder="Redacta aquí el informe..."
-            disabled={isReadOnly}
-         />
+      {activeTab === 'Costs' && (
+         <div className="space-y-8 animate-in fade-in">
+            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 text-sm text-emerald-800 flex gap-3 items-start">
+               <Calculator className="w-5 h-5 flex-shrink-0 mt-0.5" />
+               <div>
+                 <p className="font-bold">Calculadora de Escandallos:</p>
+                 <p>Selecciona los platos diseñados en la Fase 3 y calcula el coste de materia prima para determinar el precio de venta.</p>
+               </div>
+            </div>
+
+            {!phase3Data?.menu || phase3Data.menu.length === 0 ? (
+               <p className="text-center text-slate-500 py-10">Primero debes añadir platos en la Fase 3.</p>
+            ) : (
+               <div className="space-y-6">
+                  {phase3Data.menu.map(dish => {
+                     const finance = state.financials?.find(f => f.dishId === dish.id) || { totalCost: 0, sellingPrice: 0, ingredients: [] };
+                     
+                     return (
+                        <div key={dish.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                           <div className="flex justify-between items-center mb-4">
+                              <h3 className="font-bold text-slate-800 text-lg">{dish.name} <span className="text-xs text-slate-400 font-normal">({dish.category})</span></h3>
+                              <div className="text-right">
+                                 <div className="text-xs text-slate-500 uppercase font-bold">Coste Total</div>
+                                 <div className="text-xl font-bold text-emerald-600">{finance.totalCost.toFixed(2)}€</div>
+                              </div>
+                           </div>
+
+                           <div className="mb-4">
+                              <table className="w-full text-sm">
+                                 <thead>
+                                    <tr className="bg-slate-50 text-slate-500">
+                                       <th className="text-left p-2 rounded-l">Ingrediente</th>
+                                       <th className="text-left p-2">Cantidad</th>
+                                       <th className="text-right p-2 rounded-r">Coste (€)</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    {finance.ingredients.map((ing, idx) => (
+                                       <tr key={idx} className="border-b border-slate-100">
+                                          <td className="p-2"><input className="w-full bg-transparent outline-none" placeholder="Ej: Arroz Bomba" value={ing.name} onChange={(e) => updateIngredient(dish.id, idx, 'name', e.target.value)} /></td>
+                                          <td className="p-2"><input className="w-full bg-transparent outline-none" placeholder="100g" value={ing.quantity} onChange={(e) => updateIngredient(dish.id, idx, 'quantity', e.target.value)} /></td>
+                                          <td className="p-2"><input type="number" className="w-full bg-transparent outline-none text-right" placeholder="0.00" value={ing.price} onChange={(e) => updateIngredient(dish.id, idx, 'price', parseFloat(e.target.value))} /></td>
+                                       </tr>
+                                    ))}
+                                 </tbody>
+                              </table>
+                              <button onClick={() => addIngredient(dish.id)} className="mt-2 text-xs text-indigo-600 font-bold flex items-center gap-1 hover:underline"><Plus className="w-3 h-3"/> Añadir Ingrediente</button>
+                           </div>
+                           
+                           <div className="bg-slate-50 p-4 rounded-lg flex items-center justify-between">
+                               <label className="text-sm font-bold text-slate-700">Precio de Venta Recomendado (PVR):</label>
+                               <input 
+                                 type="number" 
+                                 className="p-2 border border-slate-300 rounded w-32 text-right font-bold text-slate-800" 
+                                 placeholder="0.00"
+                                 value={finance.sellingPrice || ''}
+                                 onChange={(e) => {
+                                    const financials = [...(state.financials || [])];
+                                    const entry = financials.find(f => f.dishId === dish.id);
+                                    if(!entry) { // Create if only editing price directly
+                                       financials.push({ dishId: dish.id, totalCost: 0, sellingPrice: parseFloat(e.target.value), ingredients: [] });
+                                    } else {
+                                       entry.sellingPrice = parseFloat(e.target.value);
+                                    }
+                                    updateField('financials', financials);
+                                 }}
+                               />
+                           </div>
+                        </div>
+                     )
+                  })}
+               </div>
+            )}
+         </div>
+      )}
+
+      {activeTab === 'Execution' && (
+         <div className="space-y-8 animate-in fade-in">
+            {/* Dishes Evaluation */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800">Autoevaluación Sensorial</h3>
+                {!isReadOnly && (
+                  <button onClick={addDishEval} className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
+                    <Plus className="w-4 h-4" /> Evaluar Plato
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-6">
+                {state.dishes.map((dish, idx) => (
+                  <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative group">
+                    {!isReadOnly && (
+                      <button onClick={() => removeDishEval(dish.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <div className="mb-3">
+                      <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Nombre del Plato</label>
+                      <input
+                        className="w-full p-2 border rounded bg-white"
+                        value={dish.dishName}
+                        onChange={(e) => {
+                          const newDishes = [...state.dishes];
+                          newDishes[idx].dishName = e.target.value;
+                          updateField('dishes', newDishes);
+                        }}
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Expectativa</label>
+                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.expectation} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].expectation=e.target.value; updateField('dishes', newDishes)}} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Realidad (Resultado)</label>
+                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.reality} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].reality=e.target.value; updateField('dishes', newDishes)}} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Análisis de Mermas</label>
+                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.waste} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].waste=e.target.value; updateField('dishes', newDishes)}} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {state.dishes.length === 0 && <p className="text-slate-400 text-sm italic text-center">No hay platos evaluados.</p>}
+              </div>
+            </div>
+
+            {/* Brigade Report */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <h3 className="text-lg font-bold text-slate-800 mb-2">Informe de Brigada</h3>
+               <p className="text-sm text-slate-500 mb-4">Describe el rendimiento del equipo, problemas de comunicación y soluciones aplicadas.</p>
+               <textarea
+                  className="w-full p-4 border rounded-lg h-40 bg-slate-50 focus:bg-white transition-colors"
+                  value={state.brigadeReport}
+                  onChange={(e) => updateField('brigadeReport', e.target.value)}
+                  placeholder="Redacta aquí el informe..."
+               />
+            </div>
+         </div>
+      )}
+    </div>
+  );
+};
+
+// --- Phase 5 Editor (Updated for Official Memory Index) ---
+export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly }) => {
+  const state: Phase5Data = data || INITIAL_PHASE_5;
+  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Links'>('Checklist');
+
+  const updateField = (field: keyof Phase5Data, value: any) => {
+    onUpdate({ ...state, [field]: value });
+  };
+
+  const toggleCheck = (key: keyof typeof state.individualChecklist) => {
+    updateField('individualChecklist', {
+       ...state.individualChecklist,
+       [key]: !state.individualChecklist[key]
+    });
+  };
+
+  return (
+    <div className="space-y-6 pb-10">
+      <div className="flex gap-2 mb-4 border-b border-slate-200 pb-1 overflow-x-auto">
+        <button 
+          onClick={() => setActiveTab('Checklist')}
+          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Checklist' ? 'bg-purple-50 text-purple-800 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          A. Individual (Checklist)
+        </button>
+        <button 
+          onClick={() => setActiveTab('Memory')}
+          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Memory' ? 'bg-indigo-50 text-indigo-800 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          B. Contenido Memoria Oficial
+        </button>
+        <button 
+          onClick={() => setActiveTab('Links')}
+          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Links' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          C. Enlaces Entrega
+        </button>
       </div>
+
+      {activeTab === 'Checklist' && (
+         <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
+             <div className="flex items-center gap-4 mb-6 border-b pb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600"><FileCheck className="w-6 h-6"/></div>
+                <div>
+                   <h3 className="text-xl font-bold text-slate-800">Preparación Individual</h3>
+                   <p className="text-slate-500 text-sm">Valida tu trabajo antes de la defensa oral.</p>
+                </div>
+             </div>
+             
+             <div className="space-y-4">
+                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.investigationDone} onChange={() => toggleCheck('investigationDone')} />
+                   <div>
+                      <div className="font-bold text-slate-700">Investigación Completa</div>
+                      <div className="text-xs text-slate-500">He revisado que mis aportes de la Fase 1 y 2 están en la memoria.</div>
+                   </div>
+                </label>
+                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.dishesDesigned} onChange={() => toggleCheck('dishesDesigned')} />
+                   <div>
+                      <div className="font-bold text-slate-700">Platos Diseñados y Costeados</div>
+                      <div className="text-xs text-slate-500">Mis 4 platos tienen foto, receta y precio calculado.</div>
+                   </div>
+                </label>
+                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.selfEvalDone} onChange={() => toggleCheck('selfEvalDone')} />
+                   <div>
+                      <div className="font-bold text-slate-700">Autoevaluación Realizada</div>
+                      <div className="text-xs text-slate-500">He completado la ficha de cata y análisis de mermas.</div>
+                   </div>
+                </label>
+                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.defensePrepared} onChange={() => toggleCheck('defensePrepared')} />
+                   <div>
+                      <div className="font-bold text-slate-700">Defensa Ensayada</div>
+                      <div className="text-xs text-slate-500">Conozco mi parte de la exposición y posibles preguntas.</div>
+                   </div>
+                </label>
+             </div>
+         </div>
+      )}
+
+      {activeTab === 'Memory' && (
+         <div className="space-y-8 animate-in fade-in">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-blue-800 text-sm flex gap-2">
+              <FileText className="w-5 h-5 flex-shrink-0" />
+              <div>
+                 <p className="font-bold">Rellena los apartados faltantes del Índice Oficial:</p>
+                 <p>Esta sección complementa las Fases 1-4 para generar el PDF final según normativa.</p>
+              </div>
+            </div>
+
+            {/* 2. Resumen */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <h3 className="font-bold text-slate-800 mb-2">2. Resumen del Proyecto</h3>
+               <textarea className="w-full p-3 border rounded-lg h-24 text-sm" placeholder="Breve resumen ejecutivo del proyecto..." value={state.abstract} onChange={(e) => updateField('abstract', e.target.value)} />
+            </div>
+
+            {/* 3. Intro Additions */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="col-span-2 font-bold text-slate-800 border-b pb-2">3. Introducción (Complementos)</div>
+               <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">3.2 Objetivos del Proyecto</label>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Objetivos principales..." value={state.projectObjectives} onChange={(e) => updateField('projectObjectives', e.target.value)} />
+               </div>
+               <div>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">3.3 Alcance y Limitaciones</label>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="¿Hasta dónde llega el proyecto?" value={state.projectScope} onChange={(e) => updateField('projectScope', e.target.value)} />
+               </div>
+            </div>
+
+             {/* 4. Riesgos */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-orange-500"/> 4.4 Riesgos Laborales</h3>
+               <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Identificación de riesgos asociados a la empresa..." value={state.occupationalRisks} onChange={(e) => updateField('occupationalRisks', e.target.value)} />
+            </div>
+
+             {/* 5. & 6. Methodology & Analysis */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div>
+                  <label className="block text-sm font-bold text-slate-800 mb-1">5.1 Metodología de Trabajo</label>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.methodology} onChange={(e) => updateField('methodology', e.target.value)} />
+               </div>
+               <div>
+                  <label className="block text-sm font-bold text-slate-800 mb-1">6.1 Análisis de Resultados</label>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Análisis del impacto y resultados obtenidos..." value={state.resultsAnalysis} onChange={(e) => updateField('resultsAnalysis', e.target.value)} />
+               </div>
+            </div>
+
+            {/* 7. Conclusions */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <h3 className="font-bold text-slate-800 mb-2">7. Conclusiones y Recomendaciones</h3>
+               <textarea className="w-full p-3 border rounded-lg h-40 text-sm" placeholder="Conclusiones finales y recomendaciones futuras..." value={state.finalConclusions} onChange={(e) => updateField('finalConclusions', e.target.value)} />
+            </div>
+         </div>
+      )}
+
+      {activeTab === 'Links' && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
+           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Presentation className="w-5 h-5"/> Entregables Digitales</h3>
+           <div className="space-y-4">
+              <div>
+                 <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Laptop className="w-4 h-4"/> Enlace a la Presentación (Genially/Canva/PPT)</label>
+                 <input className="w-full p-3 border rounded bg-slate-50" placeholder="https://..." value={state.presentationUrl} onChange={(e) => updateField('presentationUrl', e.target.value)} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Smartphone className="w-4 h-4"/> Enlace Carta Digital</label>
+                    <input className="w-full p-3 border rounded bg-slate-50" placeholder="https://..." value={state.virtualMenuUrl} onChange={(e) => updateField('virtualMenuUrl', e.target.value)} />
+                 </div>
+                 <div>
+                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Image className="w-4 h-4"/> Evidencia Carta Física</label>
+                    <input className="w-full p-3 border rounded bg-slate-50" placeholder="Descripción o URL..." value={state.physicalMenuEvidence} onChange={(e) => updateField('physicalMenuEvidence', e.target.value)} />
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

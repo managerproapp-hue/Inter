@@ -1,5 +1,5 @@
 
-import { LearningOutcome, RoleType, Phase2Data, Phase3Data, Phase4Data } from "./types";
+import { LearningOutcome, RoleType, Phase2Data, Phase3Data, Phase4Data, Phase5Data } from "./types";
 
 export const ZONES = [
   "Altiplano (Jumilla, Yecla – vinos, productos de secano)",
@@ -39,8 +39,12 @@ export const INITIAL_PHASE_2: Phase2Data = {
   // Part B (Group)
   synthesis: '',
   concept: { 
+    name: '',
+    restaurantType: '',
+    culinaryStyle: '',
+    targetAudience: '',
+    averagePrice: '',
     description: '',
-    initialDish: '',
     linkedODS: []
   },
   zoneMapDescription: '',
@@ -65,8 +69,31 @@ export const INITIAL_PHASE_3: Phase3Data = {
 };
 
 export const INITIAL_PHASE_4: Phase4Data = {
+  financials: [],
   dishes: [],
   brigadeReport: ''
+};
+
+export const INITIAL_PHASE_5: Phase5Data = {
+  individualChecklist: {
+    investigationDone: false,
+    dishesDesigned: false,
+    selfEvalDone: false,
+    defensePrepared: false
+  },
+  // Official Index Fields
+  abstract: '',
+  projectObjectives: '',
+  projectScope: '',
+  occupationalRisks: '',
+  methodology: 'La metodología empleada se basa en el aprendizaje basado en proyectos (ABP) y el método Flujo Puzle, distribuyendo roles específicos entre los miembros del equipo para simular un entorno de trabajo real en hostelería.',
+  resultsAnalysis: '',
+  finalConclusions: '',
+  
+  // Links
+  presentationUrl: '',
+  virtualMenuUrl: '',
+  physicalMenuEvidence: ''
 };
 
 export const CURRICULUM: Record<string, LearningOutcome[]> = {
@@ -86,10 +113,10 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
 
 export const PHASES = [
   { id: 'phase1', title: 'Fase 1: Definición y Contexto', type: 'text', icon: 'MapPin' },
-  { id: 'phase2', title: 'Fase 2: Inmersión e Ideación (Tarea 2)', type: 'structured', icon: 'Search' },
-  { id: 'phase3', title: 'Fase 3: Diseño de Oferta (Tarea 3)', type: 'structured', icon: 'Utensils' },
-  { id: 'phase4', title: 'Fase 4: Ejecución Práctica', type: 'structured', icon: 'ChefHat' },
-  { id: 'phase5', title: 'Fase 5: Conclusiones y Venta', type: 'text', icon: 'Target' },
+  { id: 'phase2', title: 'Fase 2: Inmersión e Ideación', type: 'structured', icon: 'Search' },
+  { id: 'phase3', title: 'Fase 3: Diseño de Oferta', type: 'structured', icon: 'Utensils' },
+  { id: 'phase4', title: 'Fase 4: Ejecución y Costes', type: 'structured', icon: 'ChefHat' },
+  { id: 'phase5', title: 'Fase 5: Memoria y Defensa', type: 'structured', icon: 'Presentation' },
 ];
 
 export const ROLE_DEFINITIONS = [

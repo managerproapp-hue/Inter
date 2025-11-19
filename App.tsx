@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, PhaseContent } from './types';
-import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, ROLE_DEFINITIONS, ODS_LIST } from './constants';
+import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, PhaseContent } from './types';
+import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, ROLE_DEFINITIONS, ODS_LIST } from './constants';
 import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
-import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor } from './components/PhaseEditors';
+import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
 
@@ -222,7 +222,7 @@ export default function App() {
   const [mode, setMode] = useState<AppMode>(AppMode.LANDING);
   const [projectState, setProjectState] = useState<ProjectState>({
     config: null,
-    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: '' },
+    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5 },
     lastModifiedBy: 'Sistema',
     lastModifiedDate: new Date().toISOString()
   });
@@ -277,7 +277,11 @@ export default function App() {
       const savedPhase = localStorage.getItem('gastro_active_phase');
       
       if (savedData) {
-        setProjectState(JSON.parse(savedData));
+        const parsed = JSON.parse(savedData);
+        // Ensure new phases exist if old save
+        if(!parsed.phases.phase5) parsed.phases.phase5 = INITIAL_PHASE_5;
+        
+        setProjectState(parsed);
         if (savedUser) setCurrentUser(savedUser);
         if (savedPhase) setActivePhaseId(savedPhase);
         setMode(AppMode.WORKSPACE);
@@ -296,7 +300,7 @@ export default function App() {
     setHasSavedSession(false);
     setProjectState({
       config: null,
-      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: '' },
+      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5 },
       lastModifiedBy: 'Sistema',
       lastModifiedDate: new Date().toISOString()
     });
@@ -324,6 +328,7 @@ export default function App() {
       try {
         const json = JSON.parse(e.target?.result as string);
         if (json.config && json.phases) {
+             if(!json.phases.phase5) json.phases.phase5 = INITIAL_PHASE_5; // Migration
              setProjectState(json); // Full restore
         } else if (json.teamName) {
              setProjectState(prev => ({ ...prev, config: json })); // Config only
@@ -351,6 +356,7 @@ export default function App() {
          } else {
            // Fallback for full project import inside workspace (overwrite)
            if (window.confirm("Has subido un archivo de Proyecto Completo. ¿Quieres sobrescribir todo tu trabajo actual?")) {
+             if(!json.phases.phase5) json.phases.phase5 = INITIAL_PHASE_5;
              setProjectState(json);
            }
          }
@@ -371,7 +377,6 @@ export default function App() {
       
       // SMART MERGE LOGIC
       if (contrib.phaseId === 'phase2') {
-          // Phase 2 Logic (Previous)
           const currentP2 = newPhases.phase2 as Phase2Data;
           const incomingP2 = contrib.content as Phase2Data;
           
@@ -384,11 +389,14 @@ export default function App() {
             ? `${currentP2.synthesis}\n\n--- Aportación de ${authorName}: ---\n${incomingP2.synthesis}`
             : incomingP2.synthesis;
 
-          const newConcept = {
-            description: currentP2.concept.description || incomingP2.concept.description,
-            initialDish: currentP2.concept.initialDish || incomingP2.concept.initialDish,
-            linkedODS: currentP2.concept.linkedODS.length > 0 ? currentP2.concept.linkedODS : incomingP2.concept.linkedODS,
-          };
+          const newConcept = { ...currentP2.concept };
+          // Only overwrite if empty
+          if(!newConcept.name) newConcept.name = incomingP2.concept.name;
+          if(!newConcept.restaurantType) newConcept.restaurantType = incomingP2.concept.restaurantType;
+          if(!newConcept.culinaryStyle) newConcept.culinaryStyle = incomingP2.concept.culinaryStyle;
+          if(!newConcept.targetAudience) newConcept.targetAudience = incomingP2.concept.targetAudience;
+          if(!newConcept.averagePrice) newConcept.averagePrice = incomingP2.concept.averagePrice;
+          if(!newConcept.description) newConcept.description = incomingP2.concept.description;
 
           const mergedRefs = [...new Set([...currentP2.references, ...incomingP2.references])];
           const mergedReports = [...currentP2.weeklyReports, ...incomingP2.weeklyReports];
@@ -406,69 +414,28 @@ export default function App() {
             weeklyReports: mergedReports
           };
 
-          alert(`¡Fusión Fase 2 completada! Datos de ${authorName} añadidos.`);
-
       } else if (contrib.phaseId === 'phase3') {
-          // PHASE 3 LOGIC (Tarea 3)
           const currentP3 = newPhases.phase3 as Phase3Data;
           const incomingP3 = contrib.content as Phase3Data;
-
-          // Merge Products (Text append)
+          // Merge logic same as before...
           const mergedProductList = currentP3.products.list + (incomingP3.products.list ? `\n\n[${authorName}]: ${incomingP3.products.list}` : '');
-          const mergedSust = currentP3.products.sustainability + (incomingP3.products.sustainability ? `\n\n[${authorName}]: ${incomingP3.products.sustainability}` : '');
-          const mergedImpact = currentP3.products.impactAnalysis + (incomingP3.products.impactAnalysis ? `\n\n[${authorName}]: ${incomingP3.products.impactAnalysis}` : '');
-          const mergedSources = [...new Set([...currentP3.products.sources, ...incomingP3.products.sources])];
-
-          // Merge Menu Dishes (Crucial for 20-dish goal)
-          // We need to ensure incoming dishes also have elaboration/image fields or defaults
-          const incomingDishes = incomingP3.menu.map(d => ({
-             ...d,
-             author: authorName,
-             elaboration: d.elaboration || '',
-             image: d.image || ''
-          }));
-
-          const mergedDishes = [
-             ...currentP3.menu,
-             ...incomingDishes
-          ];
-
-          // Merge Visual (Last wins or append if empty)
-          const mergedVisual = {
-             canvaDescription: currentP3.visual.canvaDescription || incomingP3.visual.canvaDescription,
-             qrUrl: currentP3.visual.qrUrl || incomingP3.visual.qrUrl,
-             physicalDescription: currentP3.visual.physicalDescription || incomingP3.visual.physicalDescription
-          };
-
+          const mergedDishes = [...currentP3.menu, ...incomingP3.menu.map(d => ({...d, author: authorName}))];
           const mergedRefs = [...new Set([...currentP3.references, ...incomingP3.references])];
 
           newPhases.phase3 = {
-             products: {
-                list: mergedProductList,
-                sustainability: mergedSust,
-                impactAnalysis: mergedImpact,
-                sources: mergedSources
-             },
+             ...currentP3,
+             products: { ...currentP3.products, list: mergedProductList },
              menu: mergedDishes,
-             visual: mergedVisual,
              references: mergedRefs
           };
 
-          alert(`¡Fusión Fase 3 completada! Platos de ${authorName} añadidos al menú grupal.`);
-
       } else {
-          // Text phases
-          const currentText = (newPhases as any)[contrib.phaseId];
-          const incomingText = contrib.content;
-          if (typeof currentText === 'string') {
-            (newPhases as any)[contrib.phaseId] = currentText ? `${currentText}\n\n[Aporte de ${authorName}]:\n${incomingText}` : incomingText;
-          } else {
-             // Fallback for Phase 4 if structure exists later
-             (newPhases as any)[contrib.phaseId] = incomingText; 
-          }
-          alert(`Contenido de ${authorName} actualizado.`);
+          // Text phases & Simple overwrites
+          (newPhases as any)[contrib.phaseId] = contrib.content;
       }
       
+      alert(`¡Datos de ${authorName} importados en ${contrib.phaseId}!`);
+
       return {
           ...prev,
           phases: newPhases,
@@ -580,7 +547,7 @@ export default function App() {
              <ul className="space-y-1">
                <li><button onClick={() => setView('roadmap')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${view === 'roadmap' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'}`}><Map className="w-4 h-4" /> Guía Didáctica</button></li>
                <li><button onClick={() => setView('curriculum')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${view === 'curriculum' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'}`}><BookOpen className="w-4 h-4" /> Guía Evaluación</button></li>
-               <li><button onClick={() => setView('print')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${view === 'print' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'}`}><Printer className="w-4 h-4" /> Vista Impresión</button></li>
+               <li><button onClick={() => setView('print')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${view === 'print' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'}`}><Printer className="w-4 h-4" /> Vista Impresión (Memoria)</button></li>
              </ul>
           </div>
         </nav>
@@ -624,9 +591,9 @@ export default function App() {
               ) : activePhaseId === 'phase3' ? (
                 <Phase3Editor data={projectState.phases.phase3} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase4' ? (
-                <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" />
-              ) : activePhaseDef?.type === 'text' ? (
-                <TextPhaseEditor data={(projectState.phases as any)[activePhaseId]} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
+                <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" phase3Data={projectState.phases.phase3} />
+              ) : activePhaseId === 'phase5' ? (
+                <Phase5Editor data={projectState.phases.phase5} onUpdate={handlePhaseUpdate} projectContext="" />
               ) : null}
             </>
           )}
@@ -638,76 +605,177 @@ export default function App() {
                    <p className="text-lg text-slate-600 mb-4 relative z-10">IES La Flota, Murcia - GM Cocina y Gastronomía</p>
                    <div className="inline-block px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-sm font-medium relative z-10"><strong>Proyecto:</strong> Oferta de una Carta Gastronómica Sostenible</div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2"><Map className="w-5 h-5 text-indigo-600"/><h3 className="font-bold text-lg text-slate-800">7 Zonas Gastronómicas Asignadas</h3></div>
-                    <ul className="space-y-3 text-sm max-h-80 overflow-y-auto pr-2 custom-scrollbar">{ZONES.map((z, i) => { const [name, desc] = z.split('('); return (<li key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-indigo-50 transition-colors"><span className="font-bold text-indigo-900 block">{i+1}. {name}</span><span className="text-slate-500 text-xs mt-1 block">{desc ? `(${desc}` : ''}</span></li>); })}</ul>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2"><Globe className="w-5 h-5 text-emerald-600" /><h3 className="font-bold text-lg text-slate-800">17 Objetivos de Desarrollo Sostenible</h3></div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">{ODS_LIST.map(ods => (<div key={ods} className="text-[10px] leading-tight p-2 bg-emerald-50 text-emerald-900 rounded border border-emerald-100 flex items-center hover:bg-emerald-100 transition-colors">{ods}</div>))}</div>
-                  </div>
-                </div>
-                <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm space-y-8">
-                  <section><h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2"><div className="w-8 h-8 rounded bg-indigo-100 flex items-center justify-center text-indigo-600"><BookOpen className="w-5 h-5"/></div>Descripción y Contexto</h3><div className="prose text-slate-600 max-w-none text-sm"><p className="mb-4">Esta tarea corresponde a la <strong>Fase 2: Diseño de la carta (octubre - noviembre)</strong>. Utiliza la metodología <em>Aprendizaje Basado en Retos (ABR)</em>.</p><div className="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500 text-indigo-900"><strong>Reto Real:</strong> Seleccionar productos de temporada sostenibles, crear una carta de 20 platos innovadores y diseñar una carta visual alineada con ODS.</div></div></section>
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="p-5 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-md transition-shadow"><div className="flex items-center gap-2 mb-3"><span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 1</span><h4 className="font-bold text-blue-900">Selección de Productos</h4></div><p className="text-xs text-blue-800 mb-3 font-medium">Responsable: Documentación (Todos contribuyen)</p><ul className="list-disc list-inside text-xs text-blue-700 space-y-2"><li>Lista unificada de productos sostenibles.</li><li>Justificación ODS y huella de carbono.</li><li>Cita de fuentes (mínimo 3).</li></ul></div>
-                      <div className="p-5 bg-purple-50 rounded-xl border border-purple-100 hover:shadow-md transition-shadow"><div className="flex items-center gap-2 mb-3"><span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 2</span><h4 className="font-bold text-purple-900">Creación de Platos</h4></div><p className="text-xs text-purple-800 mb-3 font-medium">Responsable: Individual (4 platos/alumno)</p><ul className="list-disc list-inside text-xs text-purple-700 space-y-2"><li>4 platos: Aperitivo, Entrante, Principal, Postre.</li><li>Incluir: Ingredientes, Alérgenos, Técnicas, ODS.</li><li>Coherencia con el concepto grupal.</li></ul></div>
-                      <div className="p-5 bg-orange-50 rounded-xl border border-orange-100 hover:shadow-md transition-shadow"><div className="flex items-center gap-2 mb-3"><span className="bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 3</span><h4 className="font-bold text-orange-900">Diseño Visual</h4></div><p className="text-xs text-orange-800 mb-3 font-medium">Responsable: Recursos y Comunicación</p><ul className="list-disc list-inside text-xs text-orange-700 space-y-2"><li>Diseño en Canva (PDF/Imagen).</li><li>Código QR funcional.</li><li>Descripción de soporte físico.</li></ul></div>
-                   </div>
-                   <section className="p-6 bg-slate-800 text-slate-100 rounded-xl shadow-lg flex flex-col md:flex-row justify-between gap-6"><div className="flex-1"><h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-emerald-400"><Target className="w-5 h-5"/> Entregable Grupal (PDF)</h3><ul className="text-sm space-y-2 text-slate-300"><li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Lista de productos (sostenibilidad + ODS).</li><li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Carta de 20 platos (indicando autoría).</li><li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Diseño visual y QR.</li></ul></div><div className="flex flex-col justify-center border-t md:border-t-0 md:border-l border-slate-600 pt-4 md:pt-0 md:pl-6 min-w-[200px]"><div className="flex items-center gap-2 mb-2 text-emerald-400 font-bold uppercase text-xs tracking-wider"><Calendar className="w-4 h-4"/> Fecha Límite</div><div className="text-2xl font-bold text-white">Finales Noviembre</div><div className="text-xs text-slate-400 mt-1">Subir a Moodle (Carpeta Grupal)</div></div></section>
-                </div>
+                <p className="text-slate-500 italic">Consulta las instrucciones detalladas en cada fase del editor.</p>
              </div>
           )}
           {view === 'curriculum' && (
             <div className="space-y-6">{Object.entries(CURRICULUM).map(([moduleName, outcomes]) => (<div key={moduleName} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"><h3 className="text-indigo-600 font-bold uppercase tracking-wide text-sm mb-4">{moduleName}</h3><div className="space-y-6">{outcomes.map(ra => (<div key={ra.code}><div className="font-bold text-slate-800 mb-2">{ra.code} - {ra.description}</div><ul className="list-disc list-inside text-sm text-slate-600 space-y-1 pl-2">{ra.criteria.map(c => <li key={c}>{c}</li>)}</ul></div>))}</div></div>))}</div>
           )}
           {view === 'print' && (
-            <div className="bg-white min-h-screen p-8 md:p-16 shadow-2xl print:shadow-none max-w-4xl mx-auto document-font text-black">
-               <div className="no-print mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex justify-between items-center"><span>Vista optimizada para imprimir (CTRL+P).</span><button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded font-sans font-bold hover:bg-slate-700">Imprimir Ahora</button></div>
-               <div className="text-center border-b-2 border-black pb-10 mb-10 break-after-page"><h1 className="text-4xl font-bold mb-4">{projectState.config?.projectName}</h1><h2 className="text-2xl text-slate-600 mb-8">{projectState.config?.teamName} | {projectState.config?.zone}</h2><div className="grid grid-cols-2 gap-4 text-left max-w-md mx-auto text-sm">{projectState.config?.members.map(m => (<div key={m.name} className="flex justify-between border-b border-slate-300 pb-1"><span className="font-bold">{m.role}:</span><span>{m.name}</span></div>))}</div></div>
-               <div className="space-y-12">
-                 <section><h3 className="text-2xl font-bold border-b border-black mb-4">1. Definición y Contexto</h3><div className="whitespace-pre-wrap leading-relaxed">{projectState.phases.phase1 || "Sin contenido."}</div></section>
-                 
-                 <section className="break-before-page"><h3 className="text-2xl font-bold border-b border-black mb-4">2. Tarea 2: Inmersión e Ideación</h3><div className="mb-8"><h4 className="font-bold text-xl mb-2 text-indigo-800">Informe Grupal</h4><div className="p-6 bg-slate-50 border rounded-lg space-y-4"><h5 className="text-2xl font-serif font-bold text-slate-900">{projectState.phases.phase2.concept.description || "Descripción pendiente"}</h5><div className="grid gap-2"><div><span className="font-bold">Plato Inicial:</span> {projectState.phases.phase2.concept.initialDish}</div><div><span className="font-bold">ODS Vinculados:</span> {projectState.phases.phase2.concept.linkedODS.join(', ')}</div></div></div><div className="mt-4"><h5 className="font-bold">Síntesis del Análisis</h5><p className="whitespace-pre-wrap text-sm">{projectState.phases.phase2.synthesis}</p></div></div><h4 className="font-bold text-lg mb-2 border-b pb-1">Investigación de Cartas</h4><table className="w-full text-sm text-left border-collapse mb-8"><thead><tr className="border-b border-slate-400 bg-slate-100"><th className="py-2 px-2">Restaurante</th><th className="py-2 px-2">Plato Sostenible</th><th className="py-2 px-2">ODS</th><th className="py-2 px-2">Autor</th></tr></thead><tbody>{projectState.phases.phase2.menuBenchmarking.map((p, i) => (<tr key={i} className="border-b border-slate-100"><td className="py-2 px-2 font-medium">{p.restaurantName} <span className="text-xs text-slate-500">({p.location})</span></td><td className="py-2 px-2">{p.sustainableDish}</td><td className="py-2 px-2">{p.ods}</td><td className="py-2 px-2 text-xs text-slate-500">{p.author || "-"}</td></tr>))}</tbody></table></section>
-
-                 <section className="break-before-page">
-                   <h3 className="text-2xl font-bold border-b border-black mb-4">3. Tarea 3: Diseño de Oferta</h3>
-                   <h4 className="font-bold text-lg mb-2">Productos de Temporada</h4>
-                   <div className="whitespace-pre-wrap mb-6 bg-slate-50 p-4 rounded">{projectState.phases.phase3.products.list}</div>
-                   <h4 className="font-bold text-lg mb-2">Carta Final (20 Platos)</h4>
-                   <div className="grid gap-4">
-                     {['Aperitivo', 'Entrante', 'Principal', 'Postre'].map(cat => {
-                       const dishes = projectState.phases.phase3.menu.filter(d => d.category === cat);
-                       return (
-                         <div key={cat}>
-                            <h5 className="font-bold text-md uppercase border-b border-slate-300 mb-2 mt-2">{cat}s</h5>
-                            <ul className="space-y-4">
-                              {dishes.map((d, i) => (
-                                <li key={i} className="text-sm pb-4 mb-4 border-b border-slate-100 last:border-0">
-                                   <div className="flex gap-4">
-                                     {d.image && (
-                                       <img src={d.image} alt={d.name} className="w-24 h-24 object-cover rounded border border-slate-200" />
-                                     )}
-                                     <div className="flex-1">
-                                       <div className="font-bold text-lg">{d.name}</div>
-                                       <div className="text-slate-600 text-xs mb-2 italic">{d.ingredients}</div>
-                                       <div className="text-slate-700 whitespace-pre-wrap mb-2"><strong>Elaboración:</strong> {d.elaboration || 'No especificada'}</div>
-                                       <div className="text-[10px] text-slate-400 text-right italic">Autor: {d.author}</div>
-                                     </div>
-                                   </div>
-                                </li>
-                              ))}
-                            </ul>
-                         </div>
-                       )
-                     })}
-                   </div>
-                 </section>
-
-                 <section className="break-before-page"><h3 className="text-2xl font-bold border-b border-black mb-4">4. Ejecución Práctica</h3><div className="grid gap-8">{projectState.phases.phase4.dishes.map(d => (<div key={d.id} className="border p-4 rounded bg-slate-50 print:border-slate-300"><h4 className="font-bold mb-2 uppercase">{d.dishName}</h4><div className="grid grid-cols-3 gap-4 text-xs"><div><span className="font-bold block">Expectativa:</span> {d.expectation}</div><div><span className="font-bold block">Realidad:</span> {d.reality}</div><div><span className="font-bold block">Mermas:</span> {d.waste}</div></div></div>))}</div><div className="mt-6"><h4 className="font-bold text-lg mb-2">Informe de Brigada</h4><p className="whitespace-pre-wrap">{projectState.phases.phase4.brigadeReport}</p></div></section>
-                 <section><h3 className="text-2xl font-bold border-b border-black mb-4">5. Conclusiones</h3><div className="whitespace-pre-wrap leading-relaxed">{projectState.phases.phase5 || "Sin contenido."}</div></section>
+            <div className="bg-white min-h-screen p-10 md:p-16 shadow-2xl print:shadow-none max-w-4xl mx-auto text-black" style={{ fontFamily: 'Calibri, sans-serif', fontSize: '11pt', lineHeight: '1.15' }}>
+               <style>{`
+                 @media print {
+                   @page { margin: 2.5cm; }
+                   body { -webkit-print-color-adjust: exact; }
+                 }
+               `}</style>
+               
+               <div className="no-print mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex justify-between items-center">
+                 <span><strong>Vista Oficial de Memoria:</strong> Formato Calibri 11, Interlineado 1.15, Márgenes 2.5cm.</span>
+                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded font-sans font-bold hover:bg-slate-700">Imprimir Memoria PDF</button>
                </div>
+               
+               {/* 1. PORTADA */}
+               <div className="text-center pb-20 mb-10 break-after-page flex flex-col justify-center h-[80vh]">
+                  <h1 className="text-4xl font-bold mb-8 uppercase">{projectState.config?.projectName}</h1>
+                  <h2 className="text-xl mb-2">Ciclo Formativo GM Cocina y Gastronomía</h2>
+                  <h3 className="text-lg text-slate-600 mb-12">{projectState.config?.zone}</h3>
+                  
+                  <div className="text-left max-w-md mx-auto w-full border-t border-slate-300 pt-8 mt-8">
+                     <p className="mb-1 font-bold">Integrantes del Equipo ({projectState.config?.teamName}):</p>
+                     <ul className="mb-8 space-y-1">
+                       {projectState.config?.members.map(m => (<li key={m.name} className="flex justify-between"><span>{m.name}</span> <span className="italic text-slate-500 text-sm">{m.role}</span></li>))}
+                     </ul>
+                     <p className="mb-1"><strong>Fecha:</strong> {projectState.config?.deliveryDate}</p>
+                  </div>
+               </div>
+
+               {/* 2. RESUMEN */}
+               <section className="mb-8">
+                  <h3 className="text-lg font-bold uppercase mb-2">2. Resumen</h3>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.abstract || "[Pendiente de redacción en Fase 5]"}</p>
+               </section>
+
+               {/* 3. INTRODUCCIÓN */}
+               <section className="mb-8">
+                  <h3 className="text-lg font-bold uppercase mb-2">3. Introducción</h3>
+                  <h4 className="font-bold mb-1">3.1. Contexto y justificación del proyecto</h4>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
+                  
+                  <h4 className="font-bold mb-1">3.2. Objetivos del proyecto</h4>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.projectObjectives || "[Pendiente de redacción en Fase 5]"}</p>
+                  
+                  <h4 className="font-bold mb-1">3.3. Alcance y limitaciones</h4>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.projectScope || "[Pendiente de redacción en Fase 5]"}</p>
+               </section>
+
+               {/* 4. ANÁLISIS DE EMPRESAS */}
+               <section className="mb-8 break-before-page">
+                   <h3 className="text-lg font-bold uppercase mb-2">4. Análisis y contextualización de empresas del sector</h3>
+                   
+                   <h4 className="font-bold mb-1">4.1. Caracterización de empresas del sector</h4>
+                   <div className="pl-4 mb-4">
+                      <p className="font-bold italic mb-1">4.1.1 Identificación de la empresa (Concepto Propio)</p>
+                      <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2.concept.name}</p>
+                      <p className="mb-2"><strong>Tipo:</strong> {projectState.phases.phase2.concept.restaurantType} | <strong>Estilo:</strong> {projectState.phases.phase2.concept.culinaryStyle}</p>
+                      <p className="text-justify italic mb-2">"{projectState.phases.phase2.concept.description}"</p>
+                      
+                      <p className="font-bold italic mb-1 mt-4">4.1.2 Análisis del sector (Tendencias)</p>
+                      <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase2.specificFocus}</p>
+                      <ul className="list-disc list-inside pl-4 mb-2">
+                         {projectState.phases.phase2.trends.map(t => <li key={t.id}>{t.description}</li>)}
+                      </ul>
+
+                      <p className="font-bold italic mb-1 mt-4">4.1.3 Justificación</p>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase2.synthesis}</p>
+                   </div>
+
+                   <h4 className="font-bold mb-1">4.2. Productos y servicios</h4>
+                   <div className="pl-4 mb-4">
+                      <p className="mb-2"><strong>Público Objetivo:</strong> {projectState.phases.phase2.concept.targetAudience}</p>
+                      <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong> {projectState.phases.phase3.products.list}</p>
+                   </div>
+
+                   <h4 className="font-bold mb-1">4.3. Relación con los ODS</h4>
+                   <div className="pl-4 mb-4">
+                      <p className="mb-2"><strong>ODS del Negocio:</strong> {projectState.phases.phase2.concept.linkedODS.join(', ')}</p>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3.products.sustainability}</p>
+                   </div>
+
+                   <h4 className="font-bold mb-1">4.4. Identificación de riesgos laborales</h4>
+                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase5.occupationalRisks || "[Pendiente de redacción en Fase 5]"}</p>
+
+                   <h4 className="font-bold mb-1">4.5. Conclusiones del análisis</h4>
+                   <p className="text-justify whitespace-pre-wrap pl-4">El análisis de la zona {projectState.config?.zone} confirma la viabilidad del concepto {projectState.phases.phase2.concept.name}.</p>
+               </section>
+
+               {/* 5. DESARROLLO */}
+               <section className="mb-8 break-before-page">
+                   <h3 className="text-lg font-bold uppercase mb-2">5. Desarrollo del Proyecto</h3>
+                   <h4 className="font-bold mb-1">5.1. Metodología de trabajo</h4>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.methodology}</p>
+
+                   <h4 className="font-bold mb-1">5.2. Temporalización y Actividades</h4>
+                   <div className="pl-4 mb-4">
+                      <table className="w-full text-sm border-collapse border border-slate-300">
+                         <thead><tr className="bg-slate-100"><th className="border p-1">Semana</th><th className="border p-1">Avances</th></tr></thead>
+                         <tbody>
+                            {projectState.phases.phase2.weeklyReports.map(w => (
+                               <tr key={w.id}><td className="border p-1 font-bold">{w.week}</td><td className="border p-1">{w.advances}</td></tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
+               </section>
+
+               {/* 6. RESULTADOS */}
+               <section className="mb-8 break-before-page">
+                   <h3 className="text-lg font-bold uppercase mb-2">6. Resultados y análisis</h3>
+                   <h4 className="font-bold mb-1">6.1. Análisis de los resultados obtenidos</h4>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.resultsAnalysis || "[Pendiente de redacción en Fase 5]"}</p>
+                   
+                   <h4 className="font-bold mb-2">Resumen de Costes (Escandallos)</h4>
+                   <table className="w-full text-sm mb-4 border-collapse border border-slate-300">
+                     <thead>
+                       <tr className="bg-slate-100"><th className="border p-1 text-left">Plato</th><th className="border p-1 text-right">Coste</th><th className="border p-1 text-right">PVR</th><th className="border p-1 text-right">Margen</th></tr>
+                     </thead>
+                     <tbody>
+                       {projectState.phases.phase4.financials.map((f, i) => {
+                          const dishName = projectState.phases.phase3.menu.find(m => m.id === f.dishId)?.name || 'Plato desconocido';
+                          const margin = f.sellingPrice > 0 ? ((f.sellingPrice - f.totalCost) / f.sellingPrice * 100).toFixed(1) : '0';
+                          return (
+                             <tr key={i}>
+                                <td className="border p-1">{dishName}</td>
+                                <td className="border p-1 text-right">{f.totalCost.toFixed(2)}€</td>
+                                <td className="border p-1 text-right">{f.sellingPrice.toFixed(2)}€</td>
+                                <td className="border p-1 text-right">{margin}%</td>
+                             </tr>
+                          )
+                       })}
+                     </tbody>
+                   </table>
+               </section>
+
+               {/* 7. CONCLUSIONES */}
+               <section className="mb-8">
+                   <h3 className="text-lg font-bold uppercase mb-2">7. Conclusiones y recomendaciones</h3>
+                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.finalConclusions || "[Pendiente de redacción en Fase 5]"}</p>
+               </section>
+
+               {/* 8. BIBLIOGRAFÍA */}
+               <section className="mb-8 break-before-page">
+                   <h3 className="text-lg font-bold uppercase mb-2">8. Bibliografía</h3>
+                   <ul className="list-disc list-inside pl-4">
+                      {[...projectState.phases.phase2.references, ...projectState.phases.phase3.references].map((ref, i) => (
+                         <li key={i}>{ref}</li>
+                      ))}
+                   </ul>
+               </section>
+
+               {/* ANEXOS */}
+               <section className="break-before-page">
+                   <h3 className="text-lg font-bold uppercase mb-2">Anexos</h3>
+                   <div className="grid grid-cols-2 gap-4">
+                      {projectState.phases.phase3.menu.slice(0, 4).map((d, i) => (
+                         d.image && (
+                           <div key={i} className="border p-2">
+                              <img src={d.image} className="w-full h-40 object-cover mb-2" />
+                              <p className="text-center font-bold text-xs">{d.name}</p>
+                           </div>
+                         )
+                      ))}
+                   </div>
+               </section>
             </div>
           )}
         </div>

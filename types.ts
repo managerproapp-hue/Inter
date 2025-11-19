@@ -54,17 +54,21 @@ export interface WeeklyReportEntry {
 
 export interface Phase2Data {
   // PART A: Individual Analysis (Tarea 2 Individual)
-  specificFocus: string; // Enfoque asignado (ej. aperitivos)
+  specificFocus: string; // Tendencias de mercado en la zona (competencia)
   trends: TrendEntry[];
   publicAnalysis: PublicAnalysisEntry[];
   menuBenchmarking: MenuBenchmarkEntry[]; // The 5 examples
   graphs: SimpleGraphEntry[];
   
-  // PART B: Group Report (Tarea 2 Grupal)
+  // PART B: Group Report (Tarea 2 Grupal - Modelo de Negocio)
   synthesis: string; // Síntesis de tendencias y público
   concept: {
-    description: string; // Descripción del concepto
-    initialDish: string; // Plato inicial
+    name: string; // Nombre del Restaurante Ficticio
+    restaurantType: string; // EJ: Arrocería, Marisquería, De paso...
+    culinaryStyle: string; // EJ: Tradicional, Vanguardia, Fusión, Km0
+    targetAudience: string; // EJ: Nivel adquisitivo alto, Familias, Turistas
+    averagePrice: string; // EJ: 35€
+    description: string; // Descripción general narrativa
     linkedODS: string[]; // Mínimo 2
   };
   zoneMapDescription: string; // Descripción del mapa de zona
@@ -81,13 +85,13 @@ export interface MenuDish {
   category: DishCategory;
   name: string;
   ingredients: string;
-  elaboration: string; // New: Preparation method
-  image?: string; // New: Base64 image string
+  elaboration: string; 
+  image?: string; // Base64 image string
   allergens: string;
   techniques: string;
   presentation: string;
   ods: string;
-  author: string; // Vital for group work tracking
+  author: string; 
 }
 
 export interface Phase3Data {
@@ -112,7 +116,20 @@ export interface Phase3Data {
   references: string[];
 }
 
-// --- Phase 4 Structures ---
+// --- Phase 4 Structures (Costes y Ejecución) ---
+
+export interface IngredientCost {
+  name: string;
+  quantity: string;
+  price: number;
+}
+
+export interface DishFinancial {
+  dishId: string; // Links to Phase 3 MenuDish
+  totalCost: number;
+  sellingPrice: number;
+  ingredients: IngredientCost[];
+}
 
 export interface DishEval {
   id: string;
@@ -123,12 +140,45 @@ export interface DishEval {
 }
 
 export interface Phase4Data {
-  dishes: DishEval[];
+  financials: DishFinancial[]; // Escandallos (Costes)
+  dishes: DishEval[]; // Autoevaluación sensorial
   brigadeReport: string;
 }
 
+// --- Phase 5 Structures (Defensa y Memoria Oficial) ---
+
+export interface Phase5Data {
+  // Part A: Individual Checklist
+  individualChecklist: {
+    investigationDone: boolean;
+    dishesDesigned: boolean;
+    selfEvalDone: boolean;
+    defensePrepared: boolean;
+  };
+
+  // Part B: Memory Assembler (Official Index Fields)
+  // Section 2
+  abstract: string; // Resumen del proyecto
+  // Section 3
+  projectObjectives: string; // 3.2 Objetivos
+  projectScope: string; // 3.3 Alcance y limitaciones
+  // Section 4
+  occupationalRisks: string; // 4.4 Riesgos laborales
+  // Section 5
+  methodology: string; // 5.1 Metodología
+  // Section 6
+  resultsAnalysis: string; // 6.1 Análisis de resultados
+  // Section 7
+  finalConclusions: string; // 7.1 Conclusiones y recomendaciones
+
+  // Defense Links
+  presentationUrl: string; 
+  virtualMenuUrl: string; 
+  physicalMenuEvidence: string; 
+}
+
 // Union type for content allows different structures per phase
-export type PhaseContent = string | Phase2Data | Phase3Data | Phase4Data;
+export type PhaseContent = string | Phase2Data | Phase3Data | Phase4Data | Phase5Data;
 
 export interface ProjectConfig {
   projectName: string;
@@ -143,11 +193,11 @@ export interface ProjectConfig {
 export interface ProjectState {
   config: ProjectConfig | null;
   phases: {
-    phase1: string; // Text
+    phase1: string; // Text with Config display
     phase2: Phase2Data; // Structured Tarea 2
     phase3: Phase3Data; // Structured Tarea 3
-    phase4: Phase4Data; // Structured
-    phase5: string; // Text
+    phase4: Phase4Data; // Structured Tarea 4
+    phase5: Phase5Data; // Structured Tarea 5
   };
   lastModifiedBy: string;
   lastModifiedDate: string;
