@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase4Data, PhaseContent } from './types';
-import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_4, ROLE_DEFINITIONS } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle } from 'lucide-react';
+import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_4, ROLE_DEFINITIONS, ODS_LIST } from './constants';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar } from 'lucide-react';
 import { TextPhaseEditor, Phase2Editor, Phase4Editor } from './components/PhaseEditors';
 
 // --- Sub-components defined here for simplicity within file limits, or extracted if needed ---
@@ -150,7 +151,7 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
                    onChange={(e) => setConfig({...config, zone: e.target.value})}
                 >
                   <option value="" disabled>-- Selecciona una Zona para bloquearla --</option>
-                  {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
+                  {ZONES.map(z => <option key={z} value={z}>{z.split('(')[0].trim()}</option>)}
                 </select>
               </div>
             </div>
@@ -315,27 +316,27 @@ export default function App() {
          setProjectState(prev => {
             const newPhases = { ...prev.phases };
             
-            // SMART MERGE LOGIC FOR PHASE 2
+            // SMART MERGE LOGIC FOR PHASE 2 (TAREA 2)
             if (contrib.phaseId === 'phase2') {
                const currentP2 = newPhases.phase2 as Phase2Data;
                const incomingP2 = contrib.content as Phase2Data;
                
                // Merge Lists (Part A)
-               const mergedProducts = [
-                 ...currentP2.products, 
-                 ...incomingP2.products.map(p => ({...p, author: contrib.author}))
+               const mergedTrends = [
+                 ...currentP2.trends, 
+                 ...incomingP2.trends.map(p => ({...p, author: contrib.author}))
                ];
-               const mergedCompetitors = [
-                 ...currentP2.competitors, 
-                 ...incomingP2.competitors.map(c => ({...c, author: contrib.author}))
+               const mergedPublic = [
+                 ...currentP2.publicAnalysis, 
+                 ...incomingP2.publicAnalysis.map(c => ({...c, author: contrib.author}))
                ];
-               const mergedDemand = [
-                 ...currentP2.demandAnalysis,
-                 ...incomingP2.demandAnalysis.map(d => ({...d, author: contrib.author}))
+               const mergedMenu = [
+                 ...currentP2.menuBenchmarking,
+                 ...incomingP2.menuBenchmarking.map(d => ({...d, author: contrib.author}))
                ];
-               const mergedProposedODS = [
-                 ...currentP2.proposedODS,
-                 ...incomingP2.proposedODS.map(o => ({...o, author: contrib.author}))
+               const mergedGraphs = [
+                 ...currentP2.graphs,
+                 ...incomingP2.graphs.map(g => ({...g, author: contrib.author}))
                ];
 
                // Concatenate Texts (Part B - Synthesis)
@@ -345,24 +346,32 @@ export default function App() {
 
                // Smart Concept Merge: Keep current if exists (Leader decides), else take incoming
                const newConcept = {
-                 name: currentP2.concept.name || incomingP2.concept.name,
-                 slogan: currentP2.concept.slogan || incomingP2.concept.slogan,
                  description: currentP2.concept.description || incomingP2.concept.description,
-                 values: currentP2.concept.values || incomingP2.concept.values,
-                 targetAudience: currentP2.concept.targetAudience || incomingP2.concept.targetAudience,
+                 initialDish: currentP2.concept.initialDish || incomingP2.concept.initialDish,
+                 linkedODS: currentP2.concept.linkedODS.length > 0 ? currentP2.concept.linkedODS : incomingP2.concept.linkedODS,
                };
+
+               // Merge Lists (Part B)
+               const mergedRefs = [...new Set([...currentP2.references, ...incomingP2.references])];
+               const mergedReports = [
+                   ...currentP2.weeklyReports,
+                   ...incomingP2.weeklyReports // Usually only leader does this, but we allow merging
+               ];
 
                newPhases.phase2 = {
-                 products: mergedProducts,
-                 competitors: mergedCompetitors,
-                 demandAnalysis: mergedDemand,
-                 proposedODS: mergedProposedODS,
+                 specificFocus: currentP2.specificFocus, // Keep my local focus
+                 trends: mergedTrends,
+                 publicAnalysis: mergedPublic,
+                 menuBenchmarking: mergedMenu,
+                 graphs: mergedGraphs,
                  synthesis: newSynthesis,
                  concept: newConcept,
-                 finalODS: currentP2.finalODS.length > 0 ? currentP2.finalODS : incomingP2.finalODS
+                 zoneMapDescription: currentP2.zoneMapDescription || incomingP2.zoneMapDescription,
+                 references: mergedRefs,
+                 weeklyReports: mergedReports
                };
 
-               alert(`¡Fusión Inteligente completada! Se han añadido los productos y análisis de ${contrib.author} al proyecto.`);
+               alert(`¡Fusión Inteligente (Tarea 2) completada! Se han añadido las tendencias, cartas y análisis de ${contrib.author}.`);
 
             } else {
                // Standard overwrite for other phases (or text based ones)
@@ -395,7 +404,7 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
     
-    downloadJSON(contribution, `Contribucion_${activePhaseId}_${currentUser}.json`);
+    downloadJSON(contribution, `Tarea2_Contribucion_${currentUser}.json`);
   };
 
   const handleExportFullProject = () => {
@@ -481,7 +490,7 @@ export default function App() {
              <ul className="space-y-1">
                <li>
                  <button onClick={() => setView('roadmap')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${view === 'roadmap' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'}`}>
-                   <Map className="w-4 h-4" /> Hoja de Ruta
+                   <Map className="w-4 h-4" /> Guía Didáctica
                  </button>
                </li>
                <li>
@@ -526,7 +535,7 @@ export default function App() {
              <div className="md:hidden text-indigo-600 font-bold">GSM</div>
              <h1 className="text-xl font-bold text-slate-800">
                {view === 'editor' ? activePhaseDef?.title : 
-                view === 'roadmap' ? 'Hoja de Ruta' : 
+                view === 'roadmap' ? 'Guía Didáctica (Fase 2)' : 
                 view === 'curriculum' ? 'Criterios de Evaluación' : 'Vista de Impresión'}
              </h1>
            </div>
@@ -559,27 +568,139 @@ export default function App() {
             </>
           )}
 
-          {/* Roadmap View */}
+          {/* Roadmap / Didactic Guide View */}
           {view === 'roadmap' && (
-             <div className="space-y-8">
-                <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="text-lg font-bold mb-6">Cronograma del Proyecto</h3>
-                  <div className="relative border-l-2 border-indigo-200 ml-3 space-y-10">
-                    {PHASES.map((p, i) => (
-                      <div key={p.id} className="relative pl-8">
-                        <div className="absolute -left-2.5 top-1 w-5 h-5 bg-indigo-600 rounded-full border-4 border-white shadow-sm"></div>
-                        <h4 className="text-lg font-bold text-slate-900">{p.title}</h4>
-                        <p className="text-slate-500 text-sm mt-1">
-                          Responsables sugeridos: {
-                            i === 0 ? "Coordinador" :
-                            i === 1 ? "Documentación y Recursos" :
-                            i === 2 ? "Producción" :
-                            "Todos los miembros"
-                          }
-                        </p>
-                      </div>
-                    ))}
+             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Title & Header */}
+                <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-bl-full opacity-50"></div>
+                   <h1 className="text-3xl font-bold text-slate-900 mb-2 relative z-10">Guía Didáctica: Módulo de Proyecto</h1>
+                   <p className="text-lg text-slate-600 mb-4 relative z-10">IES La Flota, Murcia - GM Cocina y Gastronomía</p>
+                   <div className="inline-block px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-sm font-medium relative z-10">
+                     <strong>Proyecto:</strong> Oferta de una Carta Gastronómica Sostenible
+                   </div>
+                </div>
+
+                {/* Zones & ODS Reference Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Zones */}
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                      <Map className="w-5 h-5 text-indigo-600"/>
+                      <h3 className="font-bold text-lg text-slate-800">7 Zonas Gastronómicas Asignadas</h3>
+                    </div>
+                    <ul className="space-y-3 text-sm max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                      {ZONES.map((z, i) => {
+                        const [name, desc] = z.split('(');
+                        return (
+                          <li key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-indigo-50 transition-colors">
+                            <span className="font-bold text-indigo-900 block">{i+1}. {name}</span>
+                            <span className="text-slate-500 text-xs mt-1 block">{desc ? `(${desc}` : ''}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
+
+                  {/* ODS */}
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                      <Globe className="w-5 h-5 text-emerald-600" />
+                      <h3 className="font-bold text-lg text-slate-800">17 Objetivos de Desarrollo Sostenible</h3>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                      {ODS_LIST.map(ods => (
+                        <div key={ods} className="text-[10px] leading-tight p-2 bg-emerald-50 text-emerald-900 rounded border border-emerald-100 flex items-center hover:bg-emerald-100 transition-colors">
+                           {ods}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Syllabus Content */}
+                <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm space-y-8">
+                  <section>
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                       <div className="w-8 h-8 rounded bg-indigo-100 flex items-center justify-center text-indigo-600"><BookOpen className="w-5 h-5"/></div>
+                       Descripción y Contexto
+                    </h3>
+                    <div className="prose text-slate-600 max-w-none text-sm">
+                      <p className="mb-4">
+                        Esta tarea corresponde a la <strong>Fase 2: Diseño de la carta (octubre - noviembre)</strong>. Utiliza la metodología <em>Aprendizaje Basado en Retos (ABR)</em> para diseñar una carta gastronómica sostenible de 20 platos para un restaurante en Murcia, basada en la zona asignada.
+                      </p>
+                      <div className="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500 text-indigo-900">
+                         <strong>Reto Real:</strong> Seleccionar productos de temporada sostenibles, crear una carta de 20 platos innovadores y diseñar una carta visual (QR, Canva) alineada con ODS.
+                      </div>
+                    </div>
+                  </section>
+
+                   {/* Parts 1, 2, 3 */}
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Part 1 */}
+                      <div className="p-5 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-md transition-shadow">
+                         <div className="flex items-center gap-2 mb-3">
+                            <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 1</span>
+                            <h4 className="font-bold text-blue-900">Selección de Productos</h4>
+                         </div>
+                         <p className="text-xs text-blue-800 mb-3 font-medium">Responsable: Documentación (Todos contribuyen)</p>
+                         <ul className="list-disc list-inside text-xs text-blue-700 space-y-2">
+                           <li>Lista unificada de productos sostenibles de la zona.</li>
+                           <li>Justificación ODS y huella de carbono.</li>
+                           <li>Cita de fuentes (mínimo 3).</li>
+                         </ul>
+                      </div>
+
+                      {/* Part 2 */}
+                      <div className="p-5 bg-purple-50 rounded-xl border border-purple-100 hover:shadow-md transition-shadow">
+                         <div className="flex items-center gap-2 mb-3">
+                            <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 2</span>
+                            <h4 className="font-bold text-purple-900">Creación de Platos</h4>
+                         </div>
+                         <p className="text-xs text-purple-800 mb-3 font-medium">Responsable: Individual (4 platos/alumno)</p>
+                         <ul className="list-disc list-inside text-xs text-purple-700 space-y-2">
+                           <li>4 platos: Aperitivo, Entrante, Principal, Postre.</li>
+                           <li>Incluir: Ingredientes, Alérgenos, Técnicas, ODS.</li>
+                           <li>Coherencia con el concepto grupal.</li>
+                         </ul>
+                      </div>
+
+                      {/* Part 3 */}
+                      <div className="p-5 bg-orange-50 rounded-xl border border-orange-100 hover:shadow-md transition-shadow">
+                         <div className="flex items-center gap-2 mb-3">
+                            <span className="bg-orange-600 text-white text-xs font-bold px-2 py-1 rounded">PARTE 3</span>
+                            <h4 className="font-bold text-orange-900">Diseño Visual</h4>
+                         </div>
+                         <p className="text-xs text-orange-800 mb-3 font-medium">Responsable: Recursos y Comunicación</p>
+                         <ul className="list-disc list-inside text-xs text-orange-700 space-y-2">
+                           <li>Diseño en Canva (PDF/Imagen).</li>
+                           <li>Código QR funcional.</li>
+                           <li>Descripción de soporte físico (papel reciclado, etc).</li>
+                         </ul>
+                      </div>
+                   </div>
+
+                   {/* Deliverables */}
+                   <section className="p-6 bg-slate-800 text-slate-100 rounded-xl shadow-lg flex flex-col md:flex-row justify-between gap-6">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg mb-3 flex items-center gap-2 text-emerald-400">
+                           <Target className="w-5 h-5"/> Entregable Grupal (PDF)
+                        </h3>
+                        <ul className="text-sm space-y-2 text-slate-300">
+                           <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Lista de productos (sostenibilidad + ODS).</li>
+                           <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Carta de 20 platos (indicando autoría).</li>
+                           <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Diseño visual y QR.</li>
+                           <li className="flex items-start gap-2"><span className="text-emerald-500">✓</span> Referencias bibliográficas.</li>
+                        </ul>
+                      </div>
+                      <div className="flex flex-col justify-center border-t md:border-t-0 md:border-l border-slate-600 pt-4 md:pt-0 md:pl-6 min-w-[200px]">
+                         <div className="flex items-center gap-2 mb-2 text-emerald-400 font-bold uppercase text-xs tracking-wider">
+                            <Calendar className="w-4 h-4"/> Fecha Límite
+                         </div>
+                         <div className="text-2xl font-bold text-white">Finales Noviembre</div>
+                         <div className="text-xs text-slate-400 mt-1">Subir a Moodle (Carpeta Grupal)</div>
+                      </div>
+                   </section>
                 </div>
              </div>
           )}
@@ -636,48 +757,54 @@ export default function App() {
                  </section>
 
                  <section className="break-before-page">
-                   <h3 className="text-2xl font-bold border-b border-black mb-4">2. Inmersión e Ideación</h3>
+                   <h3 className="text-2xl font-bold border-b border-black mb-4">2. Tarea 2: Inmersión e Ideación</h3>
                    
-                   {/* Part B Output */}
+                   {/* Part B Output (Group Report) */}
                    <div className="mb-8">
-                     <h4 className="font-bold text-xl mb-2 text-indigo-800">Identidad y Concepto</h4>
-                     <div className="p-6 bg-slate-50 border rounded-lg">
-                       <h5 className="text-2xl font-serif font-bold text-slate-900 mb-1">{projectState.phases.phase2.concept.name || "Nombre por definir"}</h5>
-                       <p className="italic text-slate-600 border-b pb-4 mb-4">"{projectState.phases.phase2.concept.slogan}"</p>
-                       
-                       <div className="grid gap-4">
-                         <div><span className="font-bold">Filosofía:</span> {projectState.phases.phase2.concept.description}</div>
-                         <div><span className="font-bold">Valores:</span> {projectState.phases.phase2.concept.values}</div>
-                         <div><span className="font-bold">Público:</span> {projectState.phases.phase2.concept.targetAudience}</div>
+                     <h4 className="font-bold text-xl mb-2 text-indigo-800">Informe Grupal: Concepto</h4>
+                     <div className="p-6 bg-slate-50 border rounded-lg space-y-4">
+                       <h5 className="text-2xl font-serif font-bold text-slate-900">{projectState.phases.phase2.concept.description || "Descripción pendiente"}</h5>
+                       <div className="grid gap-2">
+                          <div><span className="font-bold">Plato Inicial:</span> {projectState.phases.phase2.concept.initialDish}</div>
+                          <div><span className="font-bold">ODS Vinculados:</span> {projectState.phases.phase2.concept.linkedODS.join(', ')}</div>
                        </div>
+                     </div>
+                     <div className="mt-4">
+                        <h5 className="font-bold">Síntesis del Análisis</h5>
+                        <p className="whitespace-pre-wrap text-sm">{projectState.phases.phase2.synthesis}</p>
                      </div>
                    </div>
 
-                   {/* Part A Output */}
-                   <h4 className="font-bold text-lg mb-2">Investigación de Mercado</h4>
-                   <p className="text-sm text-slate-500 mb-4">Recopilación del equipo</p>
-                   
+                   {/* Part A Output (Individual Analysis) */}
+                   <h4 className="font-bold text-lg mb-2 border-b pb-1">Investigación de Cartas (Benchmarking)</h4>
                    <table className="w-full text-sm text-left border-collapse mb-8">
                      <thead>
                        <tr className="border-b border-slate-400 bg-slate-100">
-                         <th className="py-2 px-2">Producto</th>
-                         <th className="py-2 px-2">Productor</th>
-                         <th className="py-2 px-2">Investigador</th>
+                         <th className="py-2 px-2">Restaurante</th>
+                         <th className="py-2 px-2">Plato Sostenible</th>
+                         <th className="py-2 px-2">ODS</th>
+                         <th className="py-2 px-2">Autor</th>
                        </tr>
                      </thead>
                      <tbody>
-                       {projectState.phases.phase2.products.map((p, i) => (
+                       {projectState.phases.phase2.menuBenchmarking.map((p, i) => (
                          <tr key={i} className="border-b border-slate-100">
-                           <td className="py-2 px-2 font-medium">{p.name}</td>
-                           <td className="py-2 px-2">{p.producer}</td>
+                           <td className="py-2 px-2 font-medium">{p.restaurantName} <span className="text-xs text-slate-500">({p.location})</span></td>
+                           <td className="py-2 px-2">{p.sustainableDish}</td>
+                           <td className="py-2 px-2">{p.ods}</td>
                            <td className="py-2 px-2 text-xs text-slate-500">{p.author || "-"}</td>
                          </tr>
                        ))}
                      </tbody>
                    </table>
 
-                   <h4 className="font-bold text-lg mb-2">Síntesis Grupal</h4>
-                   <div className="whitespace-pre-wrap leading-relaxed mb-8">{projectState.phases.phase2.synthesis || "Pendiente de redacción."}</div>
+                   <h4 className="font-bold text-lg mb-2 border-b pb-1">Análisis de Tendencias</h4>
+                   <ul className="list-disc pl-5 mb-8">
+                     {projectState.phases.phase2.trends.map((t, i) => (
+                        <li key={i} className="mb-1">{t.description} <span className="text-xs text-slate-400">({t.author})</span></li>
+                     ))}
+                   </ul>
+
                  </section>
 
                  <section>

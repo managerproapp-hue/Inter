@@ -1,12 +1,14 @@
+
 import { LearningOutcome, RoleType, Phase2Data, Phase4Data } from "./types";
 
 export const ZONES = [
-  "Vega del Segura",
-  "Altiplano",
-  "Guadalentín",
-  "Noroeste",
-  "Campo de Cartagena / Mar Menor",
-  "Río Mula"
+  "Altiplano (Jumilla, Yecla – vinos, productos de secano)",
+  "Noroeste (Caravaca, Cehegín, Moratalla – montaña, turismo rural)",
+  "Río Mula y Valle de Ricote (Mula, Bullas, Ricote – huertas, frutas)",
+  "Vega del Segura (Alta y Media) (Cieza, Molina de Segura, Alcantarilla – agricultura sostenible)",
+  "Huerta de Murcia y Oriental (Murcia capital, Santomera, Beniel – público urbano)",
+  "Valle del Guadalentín (Lorca, Mazarrón, Águilas, Totana – arroz, mariscos)",
+  "Campo de Cartagena y Mar Menor (Cartagena, Los Alcázares, San Javier, San Pedro – pescados, turismo costero)"
 ];
 
 export const ROLES = [
@@ -27,21 +29,23 @@ export const ODS_LIST = [
 ];
 
 export const INITIAL_PHASE_2: Phase2Data = {
-  // Part A
-  products: [],
-  competitors: [],
-  demandAnalysis: [],
-  proposedODS: [],
-  // Part B
+  // Part A (Individual)
+  specificFocus: '',
+  trends: [],
+  publicAnalysis: [],
+  menuBenchmarking: [],
+  graphs: [],
+  
+  // Part B (Group)
   synthesis: '',
   concept: { 
-    name: '', 
-    slogan: '', 
     description: '',
-    values: '',
-    targetAudience: ''
+    initialDish: '',
+    linkedODS: []
   },
-  finalODS: []
+  zoneMapDescription: '',
+  references: [],
+  weeklyReports: []
 };
 
 export const INITIAL_PHASE_4: Phase4Data = {
@@ -66,7 +70,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
 
 export const PHASES = [
   { id: 'phase1', title: 'Fase 1: Definición y Contexto', type: 'text', icon: 'MapPin' },
-  { id: 'phase2', title: 'Fase 2: Inmersión e Ideación', type: 'structured', icon: 'Search' },
+  { id: 'phase2', title: 'Fase 2: Inmersión e Ideación (Tarea 2)', type: 'structured', icon: 'Search' },
   { id: 'phase3', title: 'Fase 3: Diseño de Oferta', type: 'text', icon: 'Utensils' },
   { id: 'phase4', title: 'Fase 4: Ejecución Práctica', type: 'structured', icon: 'ChefHat' },
   { id: 'phase5', title: 'Fase 5: Conclusiones y Venta', type: 'text', icon: 'Target' },

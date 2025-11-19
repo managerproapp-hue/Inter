@@ -1,3 +1,4 @@
+
 export enum RoleType {
   COORDINATOR = 'Coordinador',
   DOCUMENTATION = 'Documentación',
@@ -12,56 +13,63 @@ export interface Member {
   tasks: string;
 }
 
-// --- Phase 2 Structures ---
+// --- Phase 2 Structures (Tarea 2) ---
 
-export interface Product {
+export interface TrendEntry {
   id: string;
-  name: string;
-  producer: string;
-  season: string;
-  author?: string; // To track who added it
-}
-
-export interface Competitor {
-  id: string;
-  name: string;
-  concept: string;
-  sustainabilityLevel: string;
-  opportunity: string; // What would we do better?
+  description: string; // "En Altiplano usan uvas ecológicas"
   author?: string;
 }
 
-export interface DemandEntry {
-  profile: string; // Families, tourists...
-  motivations: string;
-  ticket: string;
+export interface PublicAnalysisEntry {
+  id: string;
+  profile: string; // Edad, preferencias
+  method: string; // Encuesta whatsapp, etc
+  linkedODS: string;
   author?: string;
 }
 
-export interface ProposedODS {
+export interface MenuBenchmarkEntry {
   id: string;
+  restaurantName: string;
+  location: string;
+  sustainableDish: string;
   ods: string;
-  justification: string;
   author?: string;
+}
+
+export interface SimpleGraphEntry {
+  id: string;
+  description: string; // Descripción del gráfico
+  author?: string;
+}
+
+export interface WeeklyReportEntry {
+  id: string;
+  week: string; // "Semana 1"
+  advances: string;
+  problems: string;
+  contributions: string;
 }
 
 export interface Phase2Data {
-  // PART A: Individual Research (Puzzle Pieces)
-  products: Product[];
-  competitors: Competitor[];
-  demandAnalysis: DemandEntry[];
-  proposedODS: ProposedODS[];
+  // PART A: Individual Analysis (Tarea 2 Individual)
+  specificFocus: string; // Enfoque asignado (ej. aperitivos) - Local user state usually, but kept here for export
+  trends: TrendEntry[];
+  publicAnalysis: PublicAnalysisEntry[];
+  menuBenchmarking: MenuBenchmarkEntry[]; // The 5 examples
+  graphs: SimpleGraphEntry[];
   
-  // PART B: Group Definition (The Picture)
-  synthesis: string; // Conclusions after reading Part A
+  // PART B: Group Report (Tarea 2 Grupal)
+  synthesis: string; // Síntesis de tendencias y público
   concept: {
-    name: string;
-    slogan: string;
-    description: string; // Concept philosophy
-    values: string;
-    targetAudience: string; // Final decision
+    description: string; // Descripción del concepto
+    initialDish: string; // Plato inicial
+    linkedODS: string[]; // Mínimo 2
   };
-  finalODS: string[]; // Official project SDGs
+  zoneMapDescription: string; // Descripción del mapa de zona
+  references: string[]; // Lista de referencias (mínimo 5)
+  weeklyReports: WeeklyReportEntry[];
 }
 
 // --- Phase 4 Structures ---
@@ -96,7 +104,7 @@ export interface ProjectState {
   config: ProjectConfig | null;
   phases: {
     phase1: string; // Text
-    phase2: Phase2Data; // Structured
+    phase2: Phase2Data; // Structured Tarea 2
     phase3: string; // Text
     phase4: Phase4Data; // Structured
     phase5: string; // Text
