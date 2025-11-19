@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, DishCategory, MenuDish, DishEval } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -11,6 +11,97 @@ interface EditorProps {
   isReadOnly?: boolean;
   projectContext: string;
 }
+
+// --- Helper Component: Multi-Select ODS Dropdown ---
+interface ODSSelectorProps {
+  selected: string | string[]; // Can be array or comma-separated string
+  onChange: (val: string | string[]) => void;
+  min?: number;
+  mode?: 'string' | 'array';
+}
+
+const ODSSelector: React.FC<ODSSelectorProps> = ({ selected, onChange, min = 0, mode = 'string' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Normalize selection to array for internal logic
+  const selectedArray: string[] = Array.isArray(selected) 
+    ? selected 
+    : (selected ? selected.split(', ') : []);
+
+  const toggleODS = (ods: string) => {
+    let newArray;
+    if (selectedArray.includes(ods)) {
+      newArray = selectedArray.filter(item => item !== ods);
+    } else {
+      newArray = [...selectedArray, ods];
+    }
+    // Sort slightly by number for neatness
+    newArray.sort((a, b) => parseInt(a) - parseInt(b));
+
+    if (mode === 'array') {
+      onChange(newArray);
+    } else {
+      onChange(newArray.join(', '));
+    }
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wrapperRef]);
+
+  const isValid = min === 0 || selectedArray.length >= min;
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className={`min-h-[42px] w-full p-2 border rounded-lg bg-white cursor-pointer flex items-center justify-between hover:border-indigo-400 transition-colors ${!isValid ? 'border-orange-300 ring-1 ring-orange-100' : 'border-slate-300'}`}
+      >
+        <div className="flex flex-wrap gap-1">
+          {selectedArray.length === 0 && <span className="text-slate-400 text-sm">Seleccionar ODS vinculados...</span>}
+          {selectedArray.map(ods => (
+            <span key={ods} className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+              {ods.split('.')[0]} 
+              <X className="w-3 h-3 cursor-pointer hover:text-emerald-600" onClick={(e) => { e.stopPropagation(); toggleODS(ods); }} />
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-slate-400">
+           {!isValid && <span className="text-[10px] text-orange-500 font-bold whitespace-nowrap">Mínimo {min}</span>}
+           <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+           {ODS_LIST.map(ods => {
+             const isSelected = selectedArray.includes(ods);
+             return (
+               <div 
+                key={ods} 
+                onClick={() => toggleODS(ods)}
+                className={`p-2 text-sm cursor-pointer flex items-center gap-2 hover:bg-slate-50 ${isSelected ? 'bg-emerald-50 text-emerald-900' : 'text-slate-600'}`}
+               >
+                 <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                 </div>
+                 <span>{ods}</span>
+               </div>
+             )
+           })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // --- Text Phase Editor (1, 3, 5) ---
 export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext }) => {
@@ -165,14 +256,17 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                      <div key={idx} className="bg-slate-50 p-3 rounded border border-slate-100 space-y-2 text-sm">
                        <input className="w-full p-2 border rounded" placeholder="Perfil (Edad, gustos)" value={p.profile}
                          onChange={(e) => {const n=[...state.publicAnalysis]; n[idx].profile=e.target.value; updateField('publicAnalysis', n)}} />
-                       <div className="grid grid-cols-2 gap-2">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                          <input className="p-2 border rounded" placeholder="Método (Ej: Encuesta)" value={p.method}
                            onChange={(e) => {const n=[...state.publicAnalysis]; n[idx].method=e.target.value; updateField('publicAnalysis', n)}} />
-                         <select className="p-2 border rounded" value={p.linkedODS}
-                            onChange={(e) => {const n=[...state.publicAnalysis]; n[idx].linkedODS=e.target.value; updateField('publicAnalysis', n)}}>
-                              <option value="">ODS...</option>
-                              {ODS_LIST.map(o => <option key={o} value={o}>{o.split('.')[0]}</option>)}
-                         </select>
+                         
+                         <div className="w-full">
+                            <ODSSelector 
+                              selected={p.linkedODS} 
+                              onChange={(val) => {const n=[...state.publicAnalysis]; n[idx].linkedODS=val as string; updateField('publicAnalysis', n)}} 
+                              mode="string"
+                            />
+                         </div>
                        </div>
                      </div>
                    ))}
@@ -188,7 +282,7 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
               </div>
               <div className="space-y-4">
                 {state.menuBenchmarking.map((m, idx) => (
-                  <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-slate-50 p-3 rounded border relative">
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start bg-slate-50 p-3 rounded border relative">
                      <div className="col-span-3">
                         <input className="w-full p-2 border rounded text-sm font-bold" placeholder="Restaurante" value={m.restaurantName}
                            onChange={(e) => {const n=[...state.menuBenchmarking]; n[idx].restaurantName=e.target.value; updateField('menuBenchmarking', n)}} />
@@ -202,13 +296,13 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                            onChange={(e) => {const n=[...state.menuBenchmarking]; n[idx].sustainableDish=e.target.value; updateField('menuBenchmarking', n)}} />
                      </div>
                      <div className="col-span-2">
-                        <select className="w-full p-2 border rounded text-sm" value={m.ods}
-                            onChange={(e) => {const n=[...state.menuBenchmarking]; n[idx].ods=e.target.value; updateField('menuBenchmarking', n)}}>
-                              <option value="">ODS...</option>
-                              {ODS_LIST.map(o => <option key={o} value={o}>{o.split('.')[0]}</option>)}
-                         </select>
+                         <ODSSelector 
+                            selected={m.ods} 
+                            onChange={(val) => {const n=[...state.menuBenchmarking]; n[idx].ods=val as string; updateField('menuBenchmarking', n)}} 
+                            mode="string"
+                         />
                      </div>
-                     <div className="col-span-1 flex justify-center">
+                     <div className="col-span-1 flex justify-center pt-2">
                         <button onClick={() => removeMenu(idx)} className="text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                      </div>
                      {m.author && <span className="absolute top-0 right-0 bg-indigo-100 text-indigo-800 text-[10px] px-1 rounded">{m.author}</span>}
@@ -276,20 +370,14 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                        onChange={(e) => updateField('concept', {...state.concept, initialDish: e.target.value})} placeholder="Ej: Aperitivo de mejillones Km0..."/>
                  </div>
                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">ODS Vinculados (Mínimo 2)</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-3 rounded border">
-                       {ODS_LIST.map(ods => (
-                          <label key={ods} className="flex items-center gap-2 text-xs cursor-pointer">
-                             <input type="checkbox" checked={state.concept.linkedODS.includes(ods)}
-                               onChange={() => {
-                                  const current = state.concept.linkedODS;
-                                  const updated = current.includes(ods) ? current.filter(x => x !== ods) : [...current, ods];
-                                  updateField('concept', {...state.concept, linkedODS: updated});
-                               }} />
-                             {ods.split('.')[0]}...
-                          </label>
-                       ))}
-                    </div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">ODS Vinculados</label>
+                    <ODSSelector 
+                       selected={state.concept.linkedODS}
+                       onChange={(val) => updateField('concept', {...state.concept, linkedODS: val as string[]})}
+                       mode="array"
+                       min={2}
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Selecciona al menos 2 objetivos clave.</p>
                  </div>
               </div>
            </div>
@@ -375,6 +463,7 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       category,
       name: '',
       ingredients: '',
+      elaboration: '', // Initialize empty
       allergens: '',
       techniques: '',
       presentation: '',
@@ -391,6 +480,16 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   const updateDish = (id: string, field: keyof MenuDish, val: string) => {
     const newMenu = state.menu.map(d => d.id === id ? { ...d, [field]: val } : d);
     updateField('menu', newMenu);
+  };
+
+  const handleImageUpload = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+       updateDish(id, 'image', reader.result as string);
+    };
+    if(file) {
+      reader.readAsDataURL(file);
+    }
   };
 
   const addReference = () => {
@@ -477,39 +576,85 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                          <Plus className="w-4 h-4"/> Añadir {cat}
                       </button>
                    </div>
-                   <div className="space-y-4">
+                   <div className="space-y-6">
                       {dishes.map((dish) => (
-                         <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative">
+                         <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative shadow-sm">
                             <button onClick={() => removeDish(dish.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
                             {dish.author && <span className="absolute top-3 right-10 bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1"><Users className="w-3 h-3"/> {dish.author}</span>}
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre del Plato</label>
-                                  <input className="w-full p-2 border rounded bg-white font-bold" value={dish.name} onChange={(e) => updateDish(dish.id, 'name', e.target.value)} placeholder="Nombre creativo..." />
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                               {/* Left: Image Upload */}
+                               <div className="col-span-1 lg:col-span-3 flex flex-col items-center gap-2">
+                                  <div className="w-full aspect-square bg-slate-200 rounded-lg flex items-center justify-center overflow-hidden border border-slate-300 relative">
+                                     {dish.image ? (
+                                        <>
+                                          <img src={dish.image} alt="Plato" className="w-full h-full object-cover" />
+                                          <button 
+                                            onClick={() => updateDish(dish.id, 'image', '')}
+                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-sm"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </>
+                                     ) : (
+                                        <Camera className="w-8 h-8 text-slate-400" />
+                                     )}
+                                  </div>
+                                  <label className="cursor-pointer px-3 py-1 bg-white border border-slate-300 rounded text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1">
+                                     <Image className="w-3 h-3" /> {dish.image ? 'Cambiar' : 'Subir Foto'}
+                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(dish.id, e.target.files[0])} />
+                                  </label>
                                </div>
-                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase">Ingredientes Clave</label>
-                                  <input className="w-full p-2 border rounded bg-white" value={dish.ingredients} onChange={(e) => updateDish(dish.id, 'ingredients', e.target.value)} placeholder="Lista breve..." />
+
+                               {/* Right: Details */}
+                               <div className="col-span-1 lg:col-span-9 space-y-3">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Nombre del Plato</label>
+                                        <input className="w-full p-2 border rounded bg-white font-bold" value={dish.name} onChange={(e) => updateDish(dish.id, 'name', e.target.value)} placeholder="Nombre creativo..." />
+                                     </div>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Ingredientes Clave</label>
+                                        <input className="w-full p-2 border rounded bg-white" value={dish.ingredients} onChange={(e) => updateDish(dish.id, 'ingredients', e.target.value)} placeholder="Lista breve..." />
+                                     </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Alérgenos</label>
+                                        <input className="w-full p-2 border rounded bg-white text-sm" value={dish.allergens} onChange={(e) => updateDish(dish.id, 'allergens', e.target.value)} />
+                                     </div>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Técnicas</label>
+                                        <input className="w-full p-2 border rounded bg-white text-sm" value={dish.techniques} onChange={(e) => updateDish(dish.id, 'techniques', e.target.value)} />
+                                     </div>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">ODS (Justificación)</label>
+                                        <div className="mt-1">
+                                           <ODSSelector 
+                                             selected={dish.ods} 
+                                             onChange={(val) => updateDish(dish.id, 'ods', val as string)} 
+                                             mode="string"
+                                           />
+                                        </div>
+                                     </div>
+                                  </div>
+
+                                  <div>
+                                     <label className="text-xs font-bold text-slate-500 uppercase">Elaboración (Paso a paso)</label>
+                                     <textarea 
+                                        className="w-full p-2 border rounded bg-white text-sm h-20 resize-y" 
+                                        value={dish.elaboration} 
+                                        onChange={(e) => updateDish(dish.id, 'elaboration', e.target.value)} 
+                                        placeholder="Describa brevemente la elaboración..." 
+                                     />
+                                  </div>
+                                  
+                                  <div>
+                                     <label className="text-xs font-bold text-slate-500 uppercase">Presentación</label>
+                                     <input className="w-full p-2 border rounded bg-white text-sm" value={dish.presentation} onChange={(e) => updateDish(dish.id, 'presentation', e.target.value)} placeholder="Descripción visual..." />
+                                  </div>
                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase">Alérgenos</label>
-                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.allergens} onChange={(e) => updateDish(dish.id, 'allergens', e.target.value)} />
-                               </div>
-                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase">Técnicas</label>
-                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.techniques} onChange={(e) => updateDish(dish.id, 'techniques', e.target.value)} />
-                               </div>
-                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase">ODS (Justificación)</label>
-                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.ods} onChange={(e) => updateDish(dish.id, 'ods', e.target.value)} />
-                               </div>
-                            </div>
-                            <div className="mt-2">
-                               <label className="text-xs font-bold text-slate-500 uppercase">Presentación</label>
-                               <input className="w-full p-2 border rounded bg-white text-sm" value={dish.presentation} onChange={(e) => updateDish(dish.id, 'presentation', e.target.value)} placeholder="Descripción visual..." />
                             </div>
                          </div>
                       ))}

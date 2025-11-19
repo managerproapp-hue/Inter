@@ -81,6 +81,8 @@ export interface MenuDish {
   category: DishCategory;
   name: string;
   ingredients: string;
+  elaboration: string; // New: Preparation method
+  image?: string; // New: Base64 image string
   allergens: string;
   techniques: string;
   presentation: string;

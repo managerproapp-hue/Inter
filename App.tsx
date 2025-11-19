@@ -420,9 +420,17 @@ export default function App() {
           const mergedSources = [...new Set([...currentP3.products.sources, ...incomingP3.products.sources])];
 
           // Merge Menu Dishes (Crucial for 20-dish goal)
+          // We need to ensure incoming dishes also have elaboration/image fields or defaults
+          const incomingDishes = incomingP3.menu.map(d => ({
+             ...d,
+             author: authorName,
+             elaboration: d.elaboration || '',
+             image: d.image || ''
+          }));
+
           const mergedDishes = [
              ...currentP3.menu,
-             ...incomingP3.menu.map(d => ({ ...d, author: authorName }))
+             ...incomingDishes
           ];
 
           // Merge Visual (Last wins or append if empty)
@@ -666,12 +674,20 @@ export default function App() {
                        return (
                          <div key={cat}>
                             <h5 className="font-bold text-md uppercase border-b border-slate-300 mb-2 mt-2">{cat}s</h5>
-                            <ul className="space-y-2">
+                            <ul className="space-y-4">
                               {dishes.map((d, i) => (
-                                <li key={i} className="text-sm pb-2 mb-2 border-b border-slate-100 last:border-0">
-                                   <div className="font-bold">{d.name}</div>
-                                   <div className="text-slate-600 text-xs">{d.ingredients}</div>
-                                   <div className="text-[10px] text-slate-400 text-right italic">Autor: {d.author}</div>
+                                <li key={i} className="text-sm pb-4 mb-4 border-b border-slate-100 last:border-0">
+                                   <div className="flex gap-4">
+                                     {d.image && (
+                                       <img src={d.image} alt={d.name} className="w-24 h-24 object-cover rounded border border-slate-200" />
+                                     )}
+                                     <div className="flex-1">
+                                       <div className="font-bold text-lg">{d.name}</div>
+                                       <div className="text-slate-600 text-xs mb-2 italic">{d.ingredients}</div>
+                                       <div className="text-slate-700 whitespace-pre-wrap mb-2"><strong>Elaboración:</strong> {d.elaboration || 'No especificada'}</div>
+                                       <div className="text-[10px] text-slate-400 text-right italic">Autor: {d.author}</div>
+                                     </div>
+                                   </div>
                                 </li>
                               ))}
                             </ul>
