@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry, ProjectConfig, PlanningActivity } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock, Edit, Save, Upload, GraduationCap, AlertTriangle, FileUp, Clock, Hammer } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock, Edit, Save, Upload, GraduationCap, AlertTriangle, FileUp, Clock, Hammer, Info } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -311,7 +311,7 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   );
 };
 
-// --- Phase 2, 3 Editors omitted for brevity, assume same as before ---
+// --- Phase 2, 3 Editors ---
 export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext }) => {
   const state: Phase2Data = { ...INITIAL_PHASE_2, ...data, concept: { ...INITIAL_PHASE_2.concept, ...(data?.concept || {}) } };
   const [aiSuggestion, setAiSuggestion] = useState('');
@@ -403,7 +403,11 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
 // --- NEW: Phase 4 Editor (Memoria Parcial y Consolidación) ---
 export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
   // Defensive merge to ensure state is fully populated even if data is partial (prevents blank screen)
-  const state: Phase4Data = { ...INITIAL_PHASE_4, ...(data || {}) };
+  const state: Phase4Data = { 
+    ...INITIAL_PHASE_4, 
+    ...(data || {}),
+    timeline: Array.isArray(data?.timeline) ? data.timeline : [] // Extra protection for timeline array
+  };
   
   const [activeTab, setActiveTab] = useState<'Intro' | 'Analysis' | 'Design' | 'Planning'>('Intro');
   const updateField = (field: keyof Phase4Data, value: any) => onUpdate({ ...state, [field]: value });
@@ -539,18 +543,57 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
 
 // --- Structured Phase 5 Editor (Old Phase 4 - Costes y Ejecución) ---
 export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, phase3Data }) => {
-  const state: Phase5Data = data || INITIAL_PHASE_5;
-  const menu = phase3Data?.menu || [];
+  // Robustness check: Ensure initial structure exists
+  const state: Phase5Data = { 
+      ...INITIAL_PHASE_5, 
+      ...(data || {}),
+      financials: Array.isArray(data?.financials) ? data.financials : [],
+      dishes: Array.isArray(data?.dishes) ? data.dishes : []
+  };
+  
+  // Safe access to menu
+  const menu = Array.isArray(phase3Data?.menu) ? phase3Data?.menu : [];
+  
   const [activeTab, setActiveTab] = useState<'Financials' | 'Sensory' | 'Report'>('Financials');
   const updateField = (field: keyof Phase5Data, value: any) => onUpdate({ ...state, [field]: value });
   
-  // ... Helper functions for Financials (addFinancial, removeFinancial, etc.) same as before
-  const addFinancial = (dishId: string) => { if (state.financials.find(f => f.dishId === dishId)) return; updateField('financials', [...state.financials, { dishId, totalCost: 0, sellingPrice: 0, ingredients: [] }]); };
+  // Financial helpers
+  const addFinancial = (dishId: string) => { 
+      if (state.financials.find(f => f.dishId === dishId)) return; 
+      updateField('financials', [...state.financials, { dishId, numberOfRations: 10, totalCost: 0, sellingPrice: 0, ingredients: [] }]); 
+  };
   const removeFinancial = (dishId: string) => updateField('financials', state.financials.filter(f => f.dishId !== dishId));
   const updateFinancial = (dishId: string, field: keyof DishFinancial, value: any) => updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, [field]: value } : f));
-  const addIngredient = (dishId: string) => { const fin = state.financials.find(f => f.dishId === dishId); if(!fin) return; const newIngs = [...fin.ingredients, { name: '', quantity: '', price: 0 }]; const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0); updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f)); };
-  const updateIngredient = (dishId: string, idx: number, field: keyof IngredientCost, val: any) => { const fin = state.financials.find(f => f.dishId === dishId); if(!fin) return; const newIngs = [...fin.ingredients]; newIngs[idx] = { ...newIngs[idx], [field]: val }; const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0); updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f)); };
-  const removeIngredient = (dishId: string, idx: number) => { const fin = state.financials.find(f => f.dishId === dishId); if(!fin) return; const newIngs = [...fin.ingredients]; newIngs.splice(idx, 1); const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0); updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f)); };
+  
+  const addIngredient = (dishId: string) => { 
+      const fin = state.financials.find(f => f.dishId === dishId); 
+      if(!fin) return; 
+      const newIngs = [...fin.ingredients, { name: '', quantity: '', unit: 'kg', price: 0 }]; 
+      updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs } : f)); 
+  };
+  
+  const updateIngredient = (dishId: string, idx: number, field: keyof IngredientCost, val: any) => { 
+      const fin = state.financials.find(f => f.dishId === dishId); 
+      if(!fin) return; 
+      const newIngs = [...fin.ingredients]; 
+      newIngs[idx] = { ...newIngs[idx], [field]: val };
+      
+      // Recalculate total cost automatically: Sum (Quantity * Unit Price)
+      // Note: This assumes quantity is numeric in the string
+      const newTotalCost = newIngs.reduce((acc, curr) => acc + (parseFloat(curr.quantity || '0') * curr.price), 0);
+      
+      updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost: newTotalCost } : f)); 
+  };
+  
+  const removeIngredient = (dishId: string, idx: number) => { 
+      const fin = state.financials.find(f => f.dishId === dishId); 
+      if(!fin) return; 
+      const newIngs = [...fin.ingredients]; 
+      newIngs.splice(idx, 1); 
+      const newTotalCost = newIngs.reduce((acc, curr) => acc + (parseFloat(curr.quantity || '0') * curr.price), 0);
+      updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost: newTotalCost } : f)); 
+  };
+
   const addSensory = () => updateField('dishes', [...state.dishes, { id: Date.now().toString(), dishName: '', expectation: '', reality: '', waste: '' }]);
   const removeSensory = (idx: number) => { const n = [...state.dishes]; n.splice(idx, 1); updateField('dishes', n); };
 
@@ -565,22 +608,140 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       {activeTab === 'Financials' && (
           <div className="space-y-6 animate-in fade-in">
              <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm border border-blue-100 flex gap-3">
-                 <DollarSign className="w-5 h-5 flex-shrink-0"/><div><p className="font-bold">Cálculo de Costes</p><p>Escandalla los platos de la Fase 3.</p></div>
+                 <DollarSign className="w-5 h-5 flex-shrink-0"/><div><p className="font-bold">Cálculo de Costes (Escandallo)</p><p>Selecciona un plato y detalla sus costes exactos por ración.</p></div>
              </div>
              <div className="flex gap-2 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <select className="p-2 border rounded flex-1" id="dishSelect"><option value="">-- Seleccionar Plato --</option>{menu.filter(m => !state.financials.find(f => f.dishId === m.id)).map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}</select>
-                <button onClick={() => { const select = document.getElementById('dishSelect') as HTMLSelectElement; if(select.value) { addFinancial(select.value); select.value = ''; }}} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm">Añadir</button>
+                <select className="p-2 border rounded flex-1" id="dishSelect"><option value="">-- Seleccionar Plato Diseñado en Fase 3 --</option>{(menu || []).filter(m => !state.financials.find(f => f.dishId === m.id)).map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}</select>
+                <button onClick={() => { const select = document.getElementById('dishSelect') as HTMLSelectElement; if(select.value) { addFinancial(select.value); select.value = ''; }}} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm">Crear Escandallo</button>
              </div>
-             <div className="space-y-4">{state.financials.map(fin => {
+             
+             <div className="space-y-8">
+             {state.financials.map(fin => {
                    const dish = menu.find(m => m.id === fin.dishId);
+                   // Calculation variables
+                   const totalMaterialCost = fin.totalCost || 0; // Sum of ingredients
+                   const rations = fin.numberOfRations || 1;
+                   const costPerRation = totalMaterialCost / rations;
+                   const pvp = fin.sellingPrice || 0;
+                   const foodCostPercent = pvp > 0 ? (costPerRation / pvp) * 100 : 0;
+                   const grossMargin = pvp - costPerRation;
+                   const grossMarginPercent = pvp > 0 ? (grossMargin / pvp) * 100 : 0;
+
                    return (
-                     <div key={fin.dishId} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-lg text-slate-800">{dish?.name || 'Plato Eliminado'}</h3><button onClick={() => removeFinancial(fin.dishId)} className="text-red-500 text-xs hover:underline">Eliminar</button></div>
-                        <div className="mb-4"><table className="w-full text-sm"><thead><tr className="bg-slate-50 text-slate-500"><th className="p-2 text-left">Ingrediente</th><th className="p-2 text-left">Cant</th><th className="p-2 text-right">Precio</th><th></th></tr></thead><tbody>{fin.ingredients.map((ing, idx) => (<tr key={idx} className="border-b border-slate-100"><td className="p-2"><input className="w-full bg-transparent border-none focus:ring-0" value={ing.name} onChange={(e) => updateIngredient(fin.dishId, idx, 'name', e.target.value)} /></td><td className="p-2"><input className="w-full bg-transparent border-none focus:ring-0" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} /></td><td className="p-2"><input type="number" step="0.01" className="w-full bg-transparent border-none focus:ring-0 text-right" value={ing.price} onChange={(e) => updateIngredient(fin.dishId, idx, 'price', parseFloat(e.target.value))} /></td><td className="p-2 text-center"><button onClick={() => removeIngredient(fin.dishId, idx)}><X className="w-3 h-3 text-slate-400 hover:text-red-500"/></button></td></tr>))}</tbody></table><button onClick={() => addIngredient(fin.dishId)} className="mt-2 text-xs text-indigo-600 font-medium flex items-center gap-1"><Plus className="w-3 h-3"/> Ingrediente</button></div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200"><div><label className="text-xs font-bold uppercase">Coste Total</label><div className="text-xl font-bold text-slate-700">{fin.totalCost.toFixed(2)} €</div></div><div><label className="text-xs font-bold uppercase">PVR</label><input type="number" step="0.10" className="w-full p-1 border rounded bg-white font-bold text-lg" value={fin.sellingPrice} onChange={(e) => updateFinancial(fin.dishId, 'sellingPrice', parseFloat(e.target.value))} /></div><div><label className="text-xs font-bold uppercase">Margen</label><div className={`text-xl font-bold ${fin.sellingPrice > fin.totalCost ? 'text-emerald-600' : 'text-red-500'}`}>{fin.sellingPrice > 0 ? ((fin.sellingPrice - fin.totalCost) / fin.sellingPrice * 100).toFixed(1) : '0'}%</div></div></div>
+                     <div key={fin.dishId} className="bg-white border border-slate-900 shadow-lg mx-auto max-w-4xl print:shadow-none print:border-2" style={{ fontFamily: 'Arial, sans-serif' }}>
+                        
+                        {/* Header */}
+                        <div className="bg-indigo-100 border-b-2 border-slate-900 p-4 text-center">
+                            <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900">Escandallo de Plato / Hoja de Coste</h3>
+                        </div>
+                        
+                        {/* Subheader Grid */}
+                        <div className="grid grid-cols-12 border-b-2 border-slate-900 text-sm">
+                            <div className="col-span-8 p-2 border-r border-slate-900">
+                                <label className="font-bold block text-xs uppercase text-slate-500">Nombre del Plato</label>
+                                <span className="text-lg font-bold text-slate-900">{dish?.name || 'Plato Desconocido'}</span>
+                            </div>
+                            <div className="col-span-2 p-2 border-r border-slate-900">
+                                <label className="font-bold block text-xs uppercase text-slate-500">Nº Raciones</label>
+                                <input type="number" className="w-full font-bold bg-yellow-50 border-b border-slate-300 focus:outline-none" value={fin.numberOfRations} onChange={(e) => updateFinancial(fin.dishId, 'numberOfRations', parseFloat(e.target.value))} />
+                            </div>
+                            <div className="col-span-2 p-2">
+                                <label className="font-bold block text-xs uppercase text-slate-500">Fecha</label>
+                                <span className="text-slate-700">{new Date().toLocaleDateString()}</span>
+                            </div>
+                        </div>
+
+                        {/* Table Header */}
+                        <div className="grid grid-cols-12 bg-indigo-50 border-b border-slate-900 text-xs font-bold uppercase text-center tracking-tight">
+                            <div className="col-span-4 p-2 border-r border-slate-300 text-left">Producto / Ingrediente</div>
+                            <div className="col-span-2 p-2 border-r border-slate-300">Cantidad</div>
+                            <div className="col-span-2 p-2 border-r border-slate-300">Unidad</div>
+                            <div className="col-span-2 p-2 border-r border-slate-300">Precio Unit. (€)</div>
+                            <div className="col-span-2 p-2">Coste Total (€)</div>
+                        </div>
+
+                        {/* Ingredients Rows */}
+                        <div className="text-sm">
+                            {fin.ingredients.map((ing, idx) => {
+                                const rowCost = (parseFloat(ing.quantity || '0') * ing.price);
+                                return (
+                                    <div key={idx} className="grid grid-cols-12 border-b border-slate-200 hover:bg-slate-50 group">
+                                        <div className="col-span-4 p-1 border-r border-slate-200">
+                                            <input className="w-full bg-transparent px-2 py-1 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Nombre ingrediente..." value={ing.name} onChange={(e) => updateIngredient(fin.dishId, idx, 'name', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2 p-1 border-r border-slate-200">
+                                            <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" type="number" step="0.001" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2 p-1 border-r border-slate-200">
+                                            <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" placeholder="kg, L, ud" value={ing.unit} onChange={(e) => updateIngredient(fin.dishId, idx, 'unit', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2 p-1 border-r border-slate-200">
+                                            <input className="w-full bg-transparent text-right px-2 py-1 focus:bg-white outline-none" type="number" step="0.01" value={ing.price} onChange={(e) => updateIngredient(fin.dishId, idx, 'price', parseFloat(e.target.value))} />
+                                        </div>
+                                        <div className="col-span-2 p-2 text-right font-mono text-slate-700 relative">
+                                            {rowCost.toFixed(2)} €
+                                            <button onClick={() => removeIngredient(fin.dishId, idx)} className="absolute right-1 top-1.5 opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-100 p-1 rounded"><Trash2 className="w-3 h-3" /></button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div className="p-2 text-center">
+                                <button onClick={() => addIngredient(fin.dishId)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1"><Plus className="w-3 h-3"/> Añadir Ingrediente</button>
+                            </div>
+                        </div>
+
+                        {/* Footer Calculations */}
+                        <div className="border-t-2 border-slate-900 bg-slate-50 text-sm">
+                            <div className="grid grid-cols-12 border-b border-slate-300">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">Coste total de materia prima</div>
+                                <div className="col-span-4 p-2 text-right font-mono font-bold">{totalMaterialCost.toFixed(2)} €</div>
+                            </div>
+                             <div className="grid grid-cols-12 border-b border-slate-300">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">Coste por ración</div>
+                                <div className="col-span-4 p-2 text-right font-mono font-bold bg-yellow-100">{costPerRation.toFixed(2)} €</div>
+                            </div>
+                            <div className="grid grid-cols-12 border-b border-slate-300">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">% Food Cost (Coste MP / PVP)</div>
+                                <div className={`col-span-4 p-2 text-right font-mono font-bold ${foodCostPercent > 35 ? 'text-red-600' : 'text-emerald-600'}`}>{foodCostPercent.toFixed(1)} %</div>
+                            </div>
+                            <div className="grid grid-cols-12 border-b border-slate-300">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">Margen Bruto de explotación (PVP - Coste)</div>
+                                <div className="col-span-4 p-2 text-right font-mono">{grossMargin.toFixed(2)} €</div>
+                            </div>
+                            <div className="grid grid-cols-12 border-b border-slate-300">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">% Margen Bruto</div>
+                                <div className="col-span-4 p-2 text-right font-mono">{grossMarginPercent.toFixed(1)} %</div>
+                            </div>
+                            <div className="grid grid-cols-12 bg-indigo-100 border-t-2 border-slate-900">
+                                <div className="col-span-8 p-3 text-right font-bold border-r border-slate-300 uppercase text-indigo-900 flex items-center justify-end gap-2">
+                                    <DollarSign className="w-4 h-4" /> Precio Venta Público (PVP) por ración
+                                </div>
+                                <div className="col-span-4 p-2 text-right">
+                                    <input 
+                                        type="number" 
+                                        step="0.10" 
+                                        className="w-full text-right font-bold text-xl bg-white border border-indigo-300 p-1 rounded text-indigo-700 focus:ring-2 ring-indigo-500 outline-none" 
+                                        value={fin.sellingPrice} 
+                                        onChange={(e) => updateFinancial(fin.dishId, 'sellingPrice', parseFloat(e.target.value))} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-2 flex justify-end">
+                           <button onClick={() => removeFinancial(fin.dishId)} className="text-red-400 hover:text-red-600 text-xs flex items-center gap-1"><Trash2 className="w-3 h-3" /> Eliminar Escandallo</button>
+                        </div>
                      </div>
                    );
-                })}</div>
+                })}
+                {state.financials.length === 0 && (
+                    <div className="text-center p-10 border-2 border-dashed border-slate-300 rounded-xl text-slate-400">
+                        <Calculator className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No hay escandallos creados aún.</p>
+                        <p className="text-sm">Selecciona un plato arriba para comenzar.</p>
+                    </div>
+                )}
+                </div>
           </div>
       )}
       {activeTab === 'Sensory' && (

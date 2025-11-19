@@ -152,13 +152,15 @@ export interface Phase4Data {
 export interface IngredientCost {
   name: string;
   quantity: string;
-  price: number;
+  unit: string; // kg, L, ud, manojo...
+  price: number; // Precio unitario
 }
 
 export interface DishFinancial {
   dishId: string; // Links to Phase 3 MenuDish
-  totalCost: number;
-  sellingPrice: number;
+  numberOfRations: number; // Para dividir costes
+  totalCost: number; // Calculated automatically
+  sellingPrice: number; // PVP
   ingredients: IngredientCost[];
 }
 
