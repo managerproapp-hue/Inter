@@ -1178,8 +1178,15 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                              onChange={(e) => setNewEval({...newEval, target: e.target.value})}
                           >
                              <option value="">-- Seleccionar Compañero --</option>
-                             {config?.members.filter((m: any) => m.name !== currentUser).map((m: any) => (
-                                <option key={m.name} value={m.name}>{m.name} ({m.role})</option>
+                             {config?.members.map((m: any) => (
+                                <option 
+                                  key={m.name} 
+                                  value={m.name} 
+                                  disabled={m.name === currentUser}
+                                  className={m.name === currentUser ? 'text-slate-400 italic' : ''}
+                                >
+                                  {m.name} ({m.role}) {m.name === currentUser ? '(Tú)' : ''}
+                                </option>
                              ))}
                           </select>
                        </div>
@@ -1192,13 +1199,21 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                 min="-1" 
                                 max="1" 
                                 step="0.1"
+                                list="tickmarks"
                                 className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                                 value={newEval.score}
                                 onChange={(e) => setNewEval({...newEval, score: parseFloat(e.target.value)})}
                               />
+                              <datalist id="tickmarks">
+                                <option value="-1"></option>
+                                <option value="-0.5"></option>
+                                <option value="0"></option>
+                                <option value="0.5"></option>
+                                <option value="1"></option>
+                              </datalist>
                               <span className="text-xs font-bold text-emerald-500">+1.0</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 text-center mt-1">Desliza para ajustar decimales</div>
+                          <div className="text-[10px] text-slate-400 text-center mt-1">Desliza para ajustar decimales (Ej: +0.2, -0.7)</div>
                        </div>
                     </div>
                     <div className="mb-4">
