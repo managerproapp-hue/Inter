@@ -93,7 +93,10 @@ export const INITIAL_PHASE_5: Phase5Data = {
   // Links
   presentationUrl: '',
   virtualMenuUrl: '',
-  physicalMenuEvidence: ''
+  physicalMenuEvidence: '',
+  
+  // Coevaluación
+  coEvaluations: []
 };
 
 export const CURRICULUM: Record<string, LearningOutcome[]> = {

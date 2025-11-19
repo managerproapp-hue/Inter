@@ -429,6 +429,21 @@ export default function App() {
              references: mergedRefs
           };
 
+      } else if (contrib.phaseId === 'phase5') {
+          // Merge CoEvaluations
+          const currentP5 = newPhases.phase5 as Phase5Data;
+          const incomingP5 = contrib.content as Phase5Data;
+          
+          const mergedCoEval = [...(currentP5.coEvaluations || []), ...(incomingP5.coEvaluations || []).map(c => ({...c, reviewer: authorName}))]; // Ensure author is correct
+          
+          newPhases.phase5 = {
+            ...currentP5,
+            ...incomingP5, // Simple merge for text fields
+            coEvaluations: mergedCoEval,
+            // Preserve existing if incoming is empty, but for simplicity in this app we mostly merge arrays or overwrite texts
+            abstract: incomingP5.abstract || currentP5.abstract
+          }
+
       } else {
           // Text phases & Simple overwrites
           (newPhases as any)[contrib.phaseId] = contrib.content;
@@ -593,7 +608,13 @@ export default function App() {
               ) : activePhaseId === 'phase4' ? (
                 <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" phase3Data={projectState.phases.phase3} />
               ) : activePhaseId === 'phase5' ? (
-                <Phase5Editor data={projectState.phases.phase5} onUpdate={handlePhaseUpdate} projectContext="" />
+                <Phase5Editor 
+                  data={projectState.phases.phase5} 
+                  onUpdate={handlePhaseUpdate} 
+                  projectContext="" 
+                  currentUser={currentUser} 
+                  config={projectState.config} 
+                />
               ) : null}
             </>
           )}
@@ -765,7 +786,7 @@ export default function App() {
                {/* ANEXOS */}
                <section className="break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">Anexos</h3>
-                   <div className="grid grid-cols-2 gap-4">
+                   <div className="grid grid-cols-2 gap-4 mb-8">
                       {projectState.phases.phase3.menu.slice(0, 4).map((d, i) => (
                          d.image && (
                            <div key={i} className="border p-2">
@@ -776,6 +797,38 @@ export default function App() {
                       ))}
                    </div>
                </section>
+
+               {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
+               {(projectState.phases.phase5.coEvaluations || []).length > 0 && (
+                 <section className="break-before-page">
+                     <h3 className="text-lg font-bold uppercase mb-4 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
+                     <p className="text-sm italic mb-4 text-slate-600">
+                       Documento reservado para el docente. Contiene las valoraciones individuales de los miembros del equipo para el ajuste de la nota (+1 / -1 punto).
+                     </p>
+                     <table className="w-full text-sm border-collapse border border-slate-400">
+                        <thead>
+                           <tr className="bg-slate-200">
+                              <th className="border border-slate-400 p-2 text-left">Evaluador</th>
+                              <th className="border border-slate-400 p-2 text-left">Evaluado</th>
+                              <th className="border border-slate-400 p-2 text-center">Impacto</th>
+                              <th className="border border-slate-400 p-2 text-left">Justificación</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {projectState.phases.phase5.coEvaluations.map((ev) => (
+                              <tr key={ev.id}>
+                                 <td className="border border-slate-400 p-2 font-bold">{ev.reviewer}</td>
+                                 <td className="border border-slate-400 p-2">{ev.target}</td>
+                                 <td className="border border-slate-400 p-2 text-center font-bold">
+                                    {ev.score === 'POSITIVE' ? '+1' : ev.score === 'NEGATIVE' ? '-1' : '0'}
+                                 </td>
+                                 <td className="border border-slate-400 p-2 italic">"{ev.justification}"</td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                 </section>
+               )}
             </div>
           )}
         </div>

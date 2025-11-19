@@ -147,6 +147,15 @@ export interface Phase4Data {
 
 // --- Phase 5 Structures (Defensa y Memoria Oficial) ---
 
+export interface CoEvaluationEntry {
+  id: string;
+  reviewer: string; // Quién escribe
+  target: string; // A quién evalúa
+  justification: string; // Por qué
+  score: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'; // +1, 0, -1
+  timestamp: string;
+}
+
 export interface Phase5Data {
   // Part A: Individual Checklist
   individualChecklist: {
@@ -175,6 +184,9 @@ export interface Phase5Data {
   presentationUrl: string; 
   virtualMenuUrl: string; 
   physicalMenuEvidence: string; 
+  
+  // Coevaluación Diabólica
+  coEvaluations: CoEvaluationEntry[];
 }
 
 // Union type for content allows different structures per phase

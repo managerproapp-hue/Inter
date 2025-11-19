@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost } from '../types';
+import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3 } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -12,6 +12,7 @@ interface EditorProps {
   projectContext: string;
   config?: any;
   phase3Data?: Phase3Data; // Phase 4 needs access to Phase 3 menu
+  currentUser?: string; // For Phase 5 CoEval
 }
 
 // --- Helper Component: Multi-Select ODS Dropdown ---
@@ -955,9 +956,10 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 };
 
 // --- Phase 5 Editor (Updated for Official Memory Index) ---
-export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly }) => {
+export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config }) => {
   const state: Phase5Data = data || INITIAL_PHASE_5;
-  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Links'>('Checklist');
+  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Links' | 'CoEval'>('Checklist');
+  const [newEval, setNewEval] = useState<{ target: string, score: string, justification: string }>({ target: '', score: 'NEUTRAL', justification: '' });
 
   const updateField = (field: keyof Phase5Data, value: any) => {
     onUpdate({ ...state, [field]: value });
@@ -970,6 +972,29 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
     });
   };
 
+  // CoEvaluation Logic
+  const handleAddCoEval = () => {
+    if(!currentUser) return alert("Debes seleccionar tu usuario en la barra lateral primero.");
+    if(!newEval.target) return alert("Selecciona a quién evalúas.");
+    if(!newEval.justification) return alert("Escribe una justificación.");
+
+    const entry: CoEvaluationEntry = {
+       id: Date.now().toString(),
+       reviewer: currentUser,
+       target: newEval.target,
+       justification: newEval.justification,
+       score: newEval.score as any,
+       timestamp: new Date().toISOString()
+    };
+
+    updateField('coEvaluations', [...(state.coEvaluations || []), entry]);
+    setNewEval({ target: '', score: 'NEUTRAL', justification: '' });
+  };
+
+  const handleDeleteCoEval = (id: string) => {
+    updateField('coEvaluations', state.coEvaluations.filter(c => c.id !== id));
+  };
+
   return (
     <div className="space-y-6 pb-10">
       <div className="flex gap-2 mb-4 border-b border-slate-200 pb-1 overflow-x-auto">
@@ -977,19 +1002,25 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
           onClick={() => setActiveTab('Checklist')}
           className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Checklist' ? 'bg-purple-50 text-purple-800 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          A. Individual (Checklist)
+          A. Individual
         </button>
         <button 
           onClick={() => setActiveTab('Memory')}
           className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Memory' ? 'bg-indigo-50 text-indigo-800 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          B. Contenido Memoria Oficial
+          B. Memoria Oficial
         </button>
         <button 
           onClick={() => setActiveTab('Links')}
           className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Links' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          C. Enlaces Entrega
+          C. Enlaces
+        </button>
+        <button 
+          onClick={() => setActiveTab('CoEval')}
+          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'CoEval' ? 'bg-red-50 text-red-800 border-b-2 border-red-500' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          🔥 Coevaluación Diabólica
         </button>
       </div>
 
@@ -1110,6 +1141,94 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                  </div>
               </div>
            </div>
+        </div>
+      )}
+      
+      {activeTab === 'CoEval' && (
+        <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in border-t-4 border-t-red-500">
+           <div className="flex items-center gap-4 mb-6 border-b pb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600"><Flame className="w-6 h-6"/></div>
+              <div>
+                 <h3 className="text-xl font-bold text-slate-800">Coevaluación Diabólica (+/- 1 Punto)</h3>
+                 <p className="text-slate-500 text-sm">Valora la implicación real de tus compañeros. El profesor decidirá si aplica el punto.</p>
+              </div>
+           </div>
+
+           {!currentUser ? (
+              <div className="bg-orange-50 p-4 rounded text-orange-800 flex items-center gap-2 border border-orange-200">
+                 <AlertCircle className="w-5 h-5"/>
+                 <span className="font-bold">ATENCIÓN:</span> Debes seleccionar tu usuario en la barra lateral izquierda para poder evaluar.
+              </div>
+           ) : (
+              <div className="space-y-8">
+                 {/* Form */}
+                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                       <UserPlus className="w-4 h-4 text-indigo-600"/> Nueva Valoración (Tú eres: {currentUser})
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                       <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Evaluar a:</label>
+                          <select 
+                             className="w-full p-2 border rounded"
+                             value={newEval.target}
+                             onChange={(e) => setNewEval({...newEval, target: e.target.value})}
+                          >
+                             <option value="">-- Seleccionar Compañero --</option>
+                             {config?.members.filter((m: any) => m.name !== currentUser).map((m: any) => (
+                                <option key={m.name} value={m.name}>{m.name} ({m.role})</option>
+                             ))}
+                          </select>
+                       </div>
+                       <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Impacto Propuesto:</label>
+                          <div className="flex gap-2 mt-1">
+                             <button onClick={() => setNewEval({...newEval, score: 'POSITIVE'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'POSITIVE' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-slate-600'}`}>+ Positivo</button>
+                             <button onClick={() => setNewEval({...newEval, score: 'NEUTRAL'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'NEUTRAL' ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-600'}`}>= Neutro</button>
+                             <button onClick={() => setNewEval({...newEval, score: 'NEGATIVE'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'NEGATIVE' ? 'bg-red-500 text-white border-red-600' : 'bg-white text-slate-600'}`}>- Negativo</button>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="mb-4">
+                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Justificación (Obligatoria):</label>
+                       <textarea 
+                          className="w-full p-3 border rounded h-24 text-sm"
+                          placeholder="Explica por qué merece este punto (positivo o negativo)..."
+                          value={newEval.justification}
+                          onChange={(e) => setNewEval({...newEval, justification: e.target.value})}
+                       />
+                    </div>
+                    <button onClick={handleAddCoEval} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-indigo-500">Enviar Valoración</button>
+                 </div>
+
+                 {/* List */}
+                 <div>
+                    <h4 className="font-bold text-slate-800 mb-4">Tus Valoraciones Enviadas</h4>
+                    <div className="space-y-3">
+                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).length === 0 && <p className="text-slate-400 italic text-sm">No has enviado ninguna valoración.</p>}
+                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).map(ev => (
+                          <div key={ev.id} className="border border-slate-200 rounded p-4 bg-white flex justify-between items-start">
+                             <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                   <span className="font-bold text-slate-700">Para: {ev.target}</span>
+                                   <span className={`text-[10px] px-2 py-0.5 rounded font-bold text-white ${ev.score === 'POSITIVE' ? 'bg-emerald-500' : ev.score === 'NEGATIVE' ? 'bg-red-500' : 'bg-slate-400'}`}>
+                                      {ev.score === 'POSITIVE' ? '+1 PUNTO' : ev.score === 'NEGATIVE' ? '-1 PUNTO' : 'NEUTRO'}
+                                   </span>
+                                </div>
+                                <p className="text-sm text-slate-600 italic">"{ev.justification}"</p>
+                             </div>
+                             <button onClick={() => handleDeleteCoEval(ev.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
+                          </div>
+                       ))}
+                    </div>
+                    
+                    {/* Read Only View of others? No, per requirements: "Coordinator cannot retouch". Best to hide others' evaluations in the editable view to prevent conflict, they only appear in the final PDF. */}
+                    <div className="mt-8 p-4 bg-slate-100 rounded text-xs text-slate-500 text-center">
+                       Nota: Las valoraciones de tus compañeros no son visibles aquí para evitar conflictos. Se incluirán automáticamente en el Anexo Confidencial de la Memoria Final (PDF) sin posibilidad de edición.
+                    </div>
+                 </div>
+              </div>
+           )}
         </div>
       )}
     </div>
