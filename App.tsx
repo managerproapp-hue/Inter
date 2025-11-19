@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, ROLE_DEFINITIONS, ODS_LIST } from './constants';
 import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
-import { TextPhaseEditor, Phase2Editor, Phase3Editor, Phase4Editor } from './components/PhaseEditors';
+import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
 
@@ -611,14 +611,22 @@ export default function App() {
         <div className="p-6 md:p-10 max-w-5xl mx-auto">
           {view === 'editor' && (
             <>
-              {activePhaseDef?.type === 'text' ? (
-                <TextPhaseEditor data={(projectState.phases as any)[activePhaseId]} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
+              {activePhaseId === 'phase1' ? (
+                 <Phase1Editor 
+                    data={projectState.phases.phase1} 
+                    onUpdate={handlePhaseUpdate} 
+                    isReadOnly={false} 
+                    projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`}
+                    config={projectState.config}
+                 />
               ) : activePhaseId === 'phase2' ? (
                 <Phase2Editor data={projectState.phases.phase2} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase3' ? (
                 <Phase3Editor data={projectState.phases.phase3} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase4' ? (
                 <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" />
+              ) : activePhaseDef?.type === 'text' ? (
+                <TextPhaseEditor data={(projectState.phases as any)[activePhaseId]} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : null}
             </>
           )}

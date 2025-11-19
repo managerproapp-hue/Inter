@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, DishCategory, MenuDish, DishEval } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -10,6 +10,7 @@ interface EditorProps {
   onUpdate: (data: any) => void;
   isReadOnly?: boolean;
   projectContext: string;
+  config?: any;
 }
 
 // --- Helper Component: Multi-Select ODS Dropdown ---
@@ -103,7 +104,7 @@ const ODSSelector: React.FC<ODSSelectorProps> = ({ selected, onChange, min = 0, 
   );
 };
 
-// --- Text Phase Editor (1, 3, 5) ---
+// --- Text Phase Editor (Generic) ---
 export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext }) => {
   const [loading, setLoading] = useState(false);
 
@@ -135,6 +136,76 @@ export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadO
         placeholder="Escribe aquí el desarrollo de esta fase..."
         readOnly={isReadOnly}
       />
+    </div>
+  );
+};
+
+// --- Phase 1 Editor (Config Display + Text) ---
+export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext, config }) => {
+  if (!config) return <div className="text-red-500 p-4">Error: No se cargó la configuración.</div>;
+
+  return (
+    <div className="space-y-8 h-full flex flex-col pb-10">
+      {/* Project Identity Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
+        <div className="bg-slate-800 p-6 text-white flex flex-col md:flex-row justify-between items-start gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">{config.projectName || 'Proyecto Sin Nombre'}</h2>
+            <p className="text-slate-400 mt-1 text-lg">{config.teamName || 'Equipo Sin Nombre'}</p>
+          </div>
+          <div className="text-left md:text-right">
+            <div className="bg-indigo-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 inline-block">
+              {config.groupNumber || 'G-??'}
+            </div>
+            <p className="text-sm text-slate-300 font-medium flex items-center gap-1 md:justify-end">
+               <MapPin className="w-4 h-4" /> {config.zone || 'Zona no asignada'}
+            </p>
+            {config.deliveryDate && (
+               <p className="text-sm text-slate-300 mt-1 flex items-center gap-1 md:justify-end">
+                  <Calendar className="w-4 h-4" /> {config.deliveryDate}
+               </p>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-6 bg-slate-50">
+          <h3 className="text-xs font-bold text-slate-500 uppercase mb-4 flex items-center gap-2 tracking-wider">
+            <Users className="w-4 h-4" /> Miembros del Equipo y Roles
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {config.members.map((member: any, idx: number) => (
+              <div key={idx} className="p-3 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm border border-indigo-100">
+                  {idx + 1}
+                </div>
+                <div>
+                   <p className="font-bold text-slate-800 text-sm leading-tight">{member.role}</p>
+                   <p className="text-sm text-slate-500">{member.name || "Vacante"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Context Editor */}
+      <div className="flex-1 flex flex-col min-h-[300px]">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+             <Book className="w-5 h-5 text-indigo-600" /> Definición del Contexto y Justificación
+          </h3>
+          <p className="text-sm text-slate-500">
+            Redacta aquí la introducción de tu proyecto, explicando por qué habéis elegido este concepto y cómo se adapta a la zona asignada.
+          </p>
+        </div>
+        <TextPhaseEditor 
+          data={data} 
+          onUpdate={onUpdate} 
+          isReadOnly={isReadOnly} 
+          projectContext={projectContext}
+          config={config}
+        />
+      </div>
     </div>
   );
 };
