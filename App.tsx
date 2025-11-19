@@ -631,6 +631,14 @@ export default function App() {
           )}
           {view === 'curriculum' && (
             <div className="space-y-6">
+              <div className="bg-slate-800 text-white p-6 rounded-xl shadow-md mb-8 flex items-center gap-4">
+                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl">🏛️</div>
+                 <div>
+                    <h2 className="text-xl font-bold uppercase tracking-widest">Región de Murcia</h2>
+                    <p className="text-slate-300 text-sm">Consejería de Educación y Formación Profesional</p>
+                 </div>
+              </div>
+
               {Object.entries(CURRICULUM).map(([moduleName, outcomes]) => (
                 <div key={moduleName} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
@@ -659,6 +667,7 @@ export default function App() {
               ))}
               <div className="text-center text-xs text-slate-400 pt-8 pb-4">
                 Fuente: BOLETÍN OFICIAL DEL ESTADO. Núm. 129, Martes 28 de mayo de 2024, Sec. I. Pág. 61079. cve: BOE-A-2024-10684.
+                <br/><a href="https://www.boe.es" target="_blank" className="underline hover:text-slate-600">Verificable en https://www.boe.es</a>
               </div>
             </div>
           )}
@@ -831,35 +840,40 @@ export default function App() {
                {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
                {(projectState.phases.phase5.coEvaluations || []).length > 0 && (
                  <section className="break-before-page">
-                     <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
-                     <div className="mb-4 border-l-4 border-red-500 pl-3">
-                        <h4 className="font-bold">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</h4>
-                        <p className="text-sm italic text-slate-600">
-                          Documento reservado para el docente. Contiene las valoraciones para el ajuste de nota según implicación.
-                        </p>
-                     </div>
-                     <table className="w-full text-sm border-collapse border border-slate-400">
-                        <thead>
-                           <tr className="bg-slate-200">
-                              <th className="border border-slate-400 p-2 text-left">Evaluador</th>
-                              <th className="border border-slate-400 p-2 text-left">Evaluado</th>
-                              <th className="border border-slate-400 p-2 text-center">Impacto</th>
-                              <th className="border border-slate-400 p-2 text-left">Justificación</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           {projectState.phases.phase5.coEvaluations.map((ev) => (
-                              <tr key={ev.id}>
-                                 <td className="border border-slate-400 p-2 font-bold">{ev.reviewer}</td>
-                                 <td className="border border-slate-400 p-2">{ev.target}</td>
-                                 <td className="border border-slate-400 p-2 text-center font-bold">
-                                    {ev.score === 'POSITIVE' ? '+1' : ev.score === 'NEGATIVE' ? '-1' : '0'}
-                                 </td>
-                                 <td className="border border-slate-400 p-2 italic">"{ev.justification}"</td>
+                     <div className="bg-slate-100 border-2 border-slate-300 p-6 rounded-xl">
+                        <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
+                        <div className="mb-4 border-l-4 border-red-500 pl-3">
+                            <h4 className="font-bold">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</h4>
+                            <p className="text-sm italic text-slate-600 mt-1">
+                              Este documento contiene las aportaciones originales de los miembros del equipo sobre la participación de sus compañeros. 
+                              El profesor revisará estas valoraciones y decidirá si las hace efectivas para el ajuste de nota.
+                            </p>
+                        </div>
+                        <table className="w-full text-sm border-collapse border border-slate-400 bg-white">
+                            <thead>
+                              <tr className="bg-slate-200">
+                                  <th className="border border-slate-400 p-2 text-left">Evaluador</th>
+                                  <th className="border border-slate-400 p-2 text-left">Evaluado</th>
+                                  <th className="border border-slate-400 p-2 text-center">Impacto</th>
+                                  <th className="border border-slate-400 p-2 text-left">Justificación</th>
                               </tr>
-                           ))}
-                        </tbody>
-                     </table>
+                            </thead>
+                            <tbody>
+                              {projectState.phases.phase5.coEvaluations.map((ev) => {
+                                const scoreVal = typeof ev.score === 'number' ? ev.score : (ev.score === 'POSITIVE' ? 1 : ev.score === 'NEGATIVE' ? -1 : 0);
+                                return (
+                                  <tr key={ev.id}>
+                                    <td className="border border-slate-400 p-2 font-bold">{ev.reviewer}</td>
+                                    <td className="border border-slate-400 p-2">{ev.target}</td>
+                                    <td className="border border-slate-400 p-2 text-center font-bold">
+                                        {scoreVal > 0 ? '+' : ''}{scoreVal.toFixed(1)}
+                                    </td>
+                                    <td className="border border-slate-400 p-2 italic">"{ev.justification}"</td>
+                                  </tr>
+                              )})}
+                            </tbody>
+                        </table>
+                     </div>
                  </section>
                )}
             </div>

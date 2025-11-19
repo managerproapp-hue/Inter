@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -959,7 +959,7 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config }) => {
   const state: Phase5Data = data || INITIAL_PHASE_5;
   const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Links' | 'CoEval'>('Checklist');
-  const [newEval, setNewEval] = useState<{ target: string, score: string, justification: string }>({ target: '', score: 'NEUTRAL', justification: '' });
+  const [newEval, setNewEval] = useState<{ target: string, score: number, justification: string }>({ target: '', score: 0, justification: '' });
 
   const updateField = (field: keyof Phase5Data, value: any) => {
     onUpdate({ ...state, [field]: value });
@@ -983,12 +983,12 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
        reviewer: currentUser,
        target: newEval.target,
        justification: newEval.justification,
-       score: newEval.score as any,
+       score: newEval.score,
        timestamp: new Date().toISOString()
     };
 
     updateField('coEvaluations', [...(state.coEvaluations || []), entry]);
-    setNewEval({ target: '', score: 'NEUTRAL', justification: '' });
+    setNewEval({ target: '', score: 0, justification: '' });
   };
 
   const handleDeleteCoEval = (id: string) => {
@@ -1151,7 +1151,9 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
               <div>
                  <h3 className="text-xl font-bold text-slate-800">Coevaluación Diabólica</h3>
                  <p className="text-red-600 font-bold text-sm mt-1">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</p>
-                 <p className="text-slate-500 text-xs mt-1">Valora la implicación real de tus compañeros. El profesor decidirá si aplica el ajuste de nota.</p>
+                 <p className="text-slate-600 text-xs mt-1 italic">
+                    "Este punto lo dan los propios compañeros, valorando su participación real. Sirve para ajustar la nota en función del esfuerzo individual."
+                 </p>
               </div>
            </div>
 
@@ -1182,12 +1184,21 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                           </select>
                        </div>
                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Impacto Propuesto:</label>
-                          <div className="flex gap-2 mt-1">
-                             <button onClick={() => setNewEval({...newEval, score: 'POSITIVE'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'POSITIVE' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-slate-600'}`}>+ Positivo</button>
-                             <button onClick={() => setNewEval({...newEval, score: 'NEUTRAL'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'NEUTRAL' ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-600'}`}>= Neutro</button>
-                             <button onClick={() => setNewEval({...newEval, score: 'NEGATIVE'})} className={`flex-1 py-2 rounded text-xs font-bold border ${newEval.score === 'NEGATIVE' ? 'bg-red-500 text-white border-red-600' : 'bg-white text-slate-600'}`}>- Negativo</button>
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Puntuación: <span className={`${newEval.score > 0 ? 'text-emerald-600' : newEval.score < 0 ? 'text-red-600' : 'text-slate-600'} text-base`}>{newEval.score > 0 ? '+' : ''}{newEval.score.toFixed(1)}</span></label>
+                          <div className="flex items-center gap-3 mt-2">
+                              <span className="text-xs font-bold text-red-500">-1.0</span>
+                              <input 
+                                type="range" 
+                                min="-1" 
+                                max="1" 
+                                step="0.1"
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                value={newEval.score}
+                                onChange={(e) => setNewEval({...newEval, score: parseFloat(e.target.value)})}
+                              />
+                              <span className="text-xs font-bold text-emerald-500">+1.0</span>
                           </div>
+                          <div className="text-[10px] text-slate-400 text-center mt-1">Desliza para ajustar decimales</div>
                        </div>
                     </div>
                     <div className="mb-4">
@@ -1207,25 +1218,29 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                     <h4 className="font-bold text-slate-800 mb-4">Tus Valoraciones Enviadas</h4>
                     <div className="space-y-3">
                        {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).length === 0 && <p className="text-slate-400 italic text-sm">No has enviado ninguna valoración.</p>}
-                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).map(ev => (
+                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).map(ev => {
+                          // Handle potential legacy strings just in case
+                          const scoreVal = typeof ev.score === 'number' ? ev.score : (ev.score === 'POSITIVE' ? 1 : ev.score === 'NEGATIVE' ? -1 : 0);
+                          return (
                           <div key={ev.id} className="border border-slate-200 rounded p-4 bg-white flex justify-between items-start">
                              <div>
                                 <div className="flex items-center gap-2 mb-1">
                                    <span className="font-bold text-slate-700">Para: {ev.target}</span>
-                                   <span className={`text-[10px] px-2 py-0.5 rounded font-bold text-white ${ev.score === 'POSITIVE' ? 'bg-emerald-500' : ev.score === 'NEGATIVE' ? 'bg-red-500' : 'bg-slate-400'}`}>
-                                      {ev.score === 'POSITIVE' ? '+1 PUNTO' : ev.score === 'NEGATIVE' ? '-1 PUNTO' : 'NEUTRO'}
+                                   <span className={`text-[10px] px-2 py-0.5 rounded font-bold text-white ${scoreVal > 0 ? 'bg-emerald-500' : scoreVal < 0 ? 'bg-red-500' : 'bg-slate-400'}`}>
+                                      {scoreVal > 0 ? '+' : ''}{scoreVal.toFixed(1)} PUNTOS
                                    </span>
                                 </div>
                                 <p className="text-sm text-slate-600 italic">"{ev.justification}"</p>
                              </div>
                              <button onClick={() => handleDeleteCoEval(ev.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
                           </div>
-                       ))}
+                       )})}
                     </div>
                     
-                    {/* Read Only View of others? No, per requirements: "Coordinator cannot retouch". Best to hide others' evaluations in the editable view to prevent conflict, they only appear in the final PDF. */}
-                    <div className="mt-8 p-4 bg-slate-100 rounded text-xs text-slate-500 text-center">
-                       Nota: Las valoraciones de tus compañeros no son visibles aquí para evitar conflictos. Se incluirán automáticamente en el Anexo Confidencial de la Memoria Final (PDF) sin posibilidad de edición.
+                    {/* Read Only View of others - Locked per requirements */}
+                    <div className="mt-8 p-4 bg-slate-100 border border-slate-200 rounded text-xs text-slate-500 text-center flex items-center justify-center gap-2">
+                       <Lock className="w-4 h-4 text-slate-400"/>
+                       <span>Nota: Las valoraciones de otros compañeros están ocultas para evitar conflictos. Se incluirán automáticamente en el Anexo Confidencial de la Memoria Final (PDF) sin posibilidad de edición.</span>
                     </div>
                  </div>
               </div>

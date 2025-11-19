@@ -152,7 +152,7 @@ export interface CoEvaluationEntry {
   reviewer: string; // Quién escribe
   target: string; // A quién evalúa
   justification: string; // Por qué
-  score: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE'; // +1, 0, -1
+  score: number; // Changed to number for decimal scoring (e.g. -0.7, +0.5)
   timestamp: string;
 }
 
