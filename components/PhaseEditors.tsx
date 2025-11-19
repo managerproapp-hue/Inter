@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry } from '../types';
+import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry, ProjectConfig } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock, Edit, Save, Upload, GraduationCap } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -10,7 +10,8 @@ interface EditorProps {
   onUpdate: (data: any) => void;
   isReadOnly?: boolean;
   projectContext: string;
-  config?: any;
+  config?: ProjectConfig;
+  onConfigUpdate?: (newConfig: ProjectConfig) => void;
   phase3Data?: Phase3Data; // Phase 4 needs access to Phase 3 menu
   currentUser?: string; // For Phase 5 CoEval
 }
@@ -143,39 +144,129 @@ export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadO
 };
 
 // --- Phase 1 Editor (Config Display + Text) ---
-export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext, config }) => {
-  if (!config) return <div className="text-red-500 p-4">Error: No se cargó la configuración. Reinicia el proyecto.</div>;
+export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext, config, onConfigUpdate }) => {
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [tempConfig, setTempConfig] = useState<ProjectConfig | null>(null);
+
+  useEffect(() => {
+    if (config) setTempConfig(config);
+  }, [config]);
+
+  if (!config || !tempConfig) return <div className="text-red-500 p-4">Error: No se cargó la configuración. Reinicia el proyecto.</div>;
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempConfig(prev => prev ? ({ ...prev, schoolLogo: reader.result as string }) : null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveConfig = () => {
+    if (onConfigUpdate && tempConfig) {
+      onConfigUpdate(tempConfig);
+      setIsEditingConfig(false);
+    }
+  };
 
   return (
     <div className="space-y-8 h-full flex flex-col pb-10">
       {/* Project Identity Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4 relative group">
+        
+        {/* Edit Button */}
+        {!isReadOnly && !isEditingConfig && (
+           <button 
+             onClick={() => setIsEditingConfig(true)}
+             className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 z-10 flex items-center gap-2 text-xs font-bold"
+           >
+             <Edit className="w-4 h-4" /> Editar Datos Centro
+           </button>
+        )}
+
         <div className="bg-slate-800 p-6 text-white flex flex-col md:flex-row justify-between items-start gap-4">
-          <div className="flex items-center gap-4">
-            {config.schoolLogo && (
-               <div className="bg-white p-2 rounded-lg w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  <img src={config.schoolLogo} alt="Logo" className="w-full h-full object-contain" />
-               </div>
-            )}
-            <div>
-              <h2 className="text-2xl font-bold">{config.projectName || 'Proyecto Sin Nombre'}</h2>
-              <p className="text-slate-400 mt-1 text-lg">{config.teamName || 'Equipo Sin Nombre'}</p>
-              {config.schoolName && <p className="text-xs text-indigo-300 mt-2 uppercase tracking-wider font-bold">{config.schoolName}</p>}
+          <div className="flex items-center gap-4 w-full">
+            {/* Logo Area */}
+            <div className="relative">
+                <div className="bg-white p-2 rounded-lg w-24 h-24 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg">
+                    {tempConfig.schoolLogo ? (
+                        <img src={tempConfig.schoolLogo} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                        <Store className="w-10 h-10 text-slate-300" />
+                    )}
+                </div>
+                {isEditingConfig && (
+                   <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center rounded-lg cursor-pointer text-white text-xs hover:bg-black/60 transition-colors">
+                      <Camera className="w-6 h-6 mb-1" /> Cambiar
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                   </label>
+                )}
+            </div>
+
+            <div className="flex-1">
+              {isEditingConfig ? (
+                <div className="space-y-2 animate-in fade-in">
+                   <div>
+                     <label className="text-[10px] uppercase text-slate-400 font-bold">Nombre del Centro</label>
+                     <input 
+                       className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:ring-1 focus:ring-indigo-500"
+                       value={tempConfig.schoolName}
+                       onChange={(e) => setTempConfig({...tempConfig, schoolName: e.target.value})}
+                     />
+                   </div>
+                   <div>
+                     <label className="text-[10px] uppercase text-slate-400 font-bold">Dirección</label>
+                     <input 
+                       className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:ring-1 focus:ring-indigo-500"
+                       value={tempConfig.schoolAddress}
+                       onChange={(e) => setTempConfig({...tempConfig, schoolAddress: e.target.value})}
+                     />
+                   </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold">{tempConfig.projectName || 'Proyecto Sin Nombre'}</h2>
+                  <p className="text-slate-400 mt-1 text-lg">{tempConfig.teamName || 'Equipo Sin Nombre'}</p>
+                  {tempConfig.schoolName && (
+                    <div className="mt-3 pt-3 border-t border-slate-700">
+                       <p className="text-xs text-indigo-300 uppercase tracking-wider font-bold flex items-center gap-1">
+                          <GraduationCap className="w-3 h-3" /> {tempConfig.schoolName}
+                       </p>
+                       {tempConfig.schoolAddress && <p className="text-xs text-slate-500">{tempConfig.schoolAddress}</p>}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
-          <div className="text-left md:text-right">
-            <div className="bg-indigo-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 inline-block">
-              {config.groupNumber || 'G-??'}
+
+          {/* Actions in Edit Mode */}
+          {isEditingConfig && (
+            <div className="flex gap-2 mt-2 md:mt-0">
+               <button onClick={() => { setTempConfig(config); setIsEditingConfig(false); }} className="p-2 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30"><X className="w-5 h-5" /></button>
+               <button onClick={saveConfig} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 shadow-lg"><Save className="w-4 h-4" /> Guardar</button>
             </div>
-            <p className="text-sm text-slate-300 font-medium flex items-center gap-1 md:justify-end">
-               <MapPin className="w-4 h-4" /> {config.zone || 'Zona no asignada'}
-            </p>
-            {config.deliveryDate && (
-               <p className="text-sm text-slate-300 mt-1 flex items-center gap-1 md:justify-end">
-                  <Calendar className="w-4 h-4" /> {config.deliveryDate}
-               </p>
-            )}
-          </div>
+          )}
+          
+          {/* Right Side Meta Data (Only show if not editing for cleaner UI) */}
+          {!isEditingConfig && (
+            <div className="text-left md:text-right hidden md:block">
+                <div className="bg-indigo-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 inline-block">
+                {tempConfig.groupNumber || 'G-??'}
+                </div>
+                <p className="text-sm text-slate-300 font-medium flex items-center gap-1 md:justify-end">
+                <MapPin className="w-4 h-4" /> {tempConfig.zone || 'Zona no asignada'}
+                </p>
+                {tempConfig.deliveryDate && (
+                <p className="text-sm text-slate-300 mt-1 flex items-center gap-1 md:justify-end">
+                    <Calendar className="w-4 h-4" /> {tempConfig.deliveryDate}
+                </p>
+                )}
+            </div>
+          )}
         </div>
         
         <div className="p-6 bg-slate-50">
@@ -183,7 +274,7 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
             <Users className="w-4 h-4" /> Miembros del Equipo y Roles
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {config.members.map((member: any, idx: number) => (
+            {tempConfig.members.map((member: any, idx: number) => (
               <div key={idx} className="p-3 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm border border-indigo-100">
                   {idx + 1}

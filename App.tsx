@@ -720,6 +720,15 @@ export default function App() {
     }));
   };
 
+  const handleConfigUpdate = (newConfig: ProjectConfig) => {
+    setProjectState(prev => ({
+      ...prev,
+      config: newConfig,
+      lastModifiedBy: currentUser || 'Anonimo (Config)',
+      lastModifiedDate: new Date().toISOString()
+    }));
+  };
+
   if (mode === AppMode.LANDING) {
     return <Landing onSelectMode={(m) => setMode(m)} hasSavedSession={hasSavedSession} onResume={handleResumeSession} onClear={handleClearSession} />;
   }
@@ -834,6 +843,7 @@ export default function App() {
                     isReadOnly={false} 
                     projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`}
                     config={projectState.config}
+                    onConfigUpdate={handleConfigUpdate}
                  />
               ) : activePhaseId === 'phase2' ? (
                 <Phase2Editor data={projectState.phases.phase2} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
