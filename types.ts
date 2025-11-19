@@ -12,19 +12,59 @@ export interface Member {
   tasks: string;
 }
 
+// --- Phase 2 Structures ---
+
 export interface Product {
   id: string;
   name: string;
   producer: string;
   season: string;
+  author?: string; // To track who added it
 }
 
 export interface Competitor {
   id: string;
   name: string;
-  strengths: string;
-  weaknesses: string;
+  concept: string;
+  sustainabilityLevel: string;
+  opportunity: string; // What would we do better?
+  author?: string;
 }
+
+export interface DemandEntry {
+  profile: string; // Families, tourists...
+  motivations: string;
+  ticket: string;
+  author?: string;
+}
+
+export interface ProposedODS {
+  id: string;
+  ods: string;
+  justification: string;
+  author?: string;
+}
+
+export interface Phase2Data {
+  // PART A: Individual Research (Puzzle Pieces)
+  products: Product[];
+  competitors: Competitor[];
+  demandAnalysis: DemandEntry[];
+  proposedODS: ProposedODS[];
+  
+  // PART B: Group Definition (The Picture)
+  synthesis: string; // Conclusions after reading Part A
+  concept: {
+    name: string;
+    slogan: string;
+    description: string; // Concept philosophy
+    values: string;
+    targetAudience: string; // Final decision
+  };
+  finalODS: string[]; // Official project SDGs
+}
+
+// --- Phase 4 Structures ---
 
 export interface DishEval {
   id: string;
@@ -32,17 +72,6 @@ export interface DishEval {
   expectation: string;
   reality: string;
   waste: string;
-}
-
-export interface Phase2Data {
-  products: Product[];
-  competitors: Competitor[];
-  concept: {
-    name: string;
-    slogan: string;
-    values: string;
-  };
-  ods: string[];
 }
 
 export interface Phase4Data {
@@ -56,8 +85,8 @@ export type PhaseContent = string | Phase2Data | Phase4Data;
 export interface ProjectConfig {
   projectName: string;
   teamName: string;
-  groupNumber?: string; // New field
-  deliveryDate?: string; // New field
+  groupNumber?: string;
+  deliveryDate?: string;
   zone: string;
   members: Member[];
   createdAt: string;

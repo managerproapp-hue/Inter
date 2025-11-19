@@ -312,22 +312,71 @@ export default function App() {
          const contrib: Contribution = JSON.parse(e.target?.result as string);
          if (!contrib.phaseId || !contrib.content) throw new Error("Formato inválido");
          
-         // Merge logic
          setProjectState(prev => {
             const newPhases = { ...prev.phases };
-            // Specific merge for structured phases could be more granular, 
-            // but for "Puzzle Flow", replacing the phase block or merging arrays is standard.
-            // Here we replace the specific phase content with the contribution.
-            (newPhases as any)[contrib.phaseId] = contrib.content;
+            
+            // SMART MERGE LOGIC FOR PHASE 2
+            if (contrib.phaseId === 'phase2') {
+               const currentP2 = newPhases.phase2 as Phase2Data;
+               const incomingP2 = contrib.content as Phase2Data;
+               
+               // Merge Lists (Part A)
+               const mergedProducts = [
+                 ...currentP2.products, 
+                 ...incomingP2.products.map(p => ({...p, author: contrib.author}))
+               ];
+               const mergedCompetitors = [
+                 ...currentP2.competitors, 
+                 ...incomingP2.competitors.map(c => ({...c, author: contrib.author}))
+               ];
+               const mergedDemand = [
+                 ...currentP2.demandAnalysis,
+                 ...incomingP2.demandAnalysis.map(d => ({...d, author: contrib.author}))
+               ];
+               const mergedProposedODS = [
+                 ...currentP2.proposedODS,
+                 ...incomingP2.proposedODS.map(o => ({...o, author: contrib.author}))
+               ];
+
+               // Concatenate Texts (Part B - Synthesis)
+               const newSynthesis = currentP2.synthesis 
+                  ? `${currentP2.synthesis}\n\n--- Aportación de ${contrib.author}: ---\n${incomingP2.synthesis}`
+                  : incomingP2.synthesis;
+
+               // Smart Concept Merge: Keep current if exists (Leader decides), else take incoming
+               const newConcept = {
+                 name: currentP2.concept.name || incomingP2.concept.name,
+                 slogan: currentP2.concept.slogan || incomingP2.concept.slogan,
+                 description: currentP2.concept.description || incomingP2.concept.description,
+                 values: currentP2.concept.values || incomingP2.concept.values,
+                 targetAudience: currentP2.concept.targetAudience || incomingP2.concept.targetAudience,
+               };
+
+               newPhases.phase2 = {
+                 products: mergedProducts,
+                 competitors: mergedCompetitors,
+                 demandAnalysis: mergedDemand,
+                 proposedODS: mergedProposedODS,
+                 synthesis: newSynthesis,
+                 concept: newConcept,
+                 finalODS: currentP2.finalODS.length > 0 ? currentP2.finalODS : incomingP2.finalODS
+               };
+
+               alert(`¡Fusión Inteligente completada! Se han añadido los productos y análisis de ${contrib.author} al proyecto.`);
+
+            } else {
+               // Standard overwrite for other phases (or text based ones)
+               (newPhases as any)[contrib.phaseId] = contrib.content;
+               alert(`Contenido de ${contrib.author} para ${contrib.phaseId} actualizado.`);
+            }
             
             return {
                 ...prev,
                 phases: newPhases,
-                lastModifiedBy: contrib.author,
+                lastModifiedBy: `Merge (${contrib.author})`,
                 lastModifiedDate: new Date().toISOString()
             };
          });
-         alert(`Contribución de ${contrib.author} para ${contrib.phaseId} importada con éxito.`);
        } catch (err) {
          alert("Error: El archivo no es una contribución válida.");
        }
@@ -587,31 +636,48 @@ export default function App() {
                  </section>
 
                  <section className="break-before-page">
-                   <h3 className="text-2xl font-bold border-b border-black mb-4">2. Inmersión: Concepto y Productos</h3>
-                   <div className="mb-6 p-4 bg-slate-50 border rounded">
-                     <h4 className="font-bold text-lg">{projectState.phases.phase2.concept.name}</h4>
-                     <p className="italic text-slate-600 mb-2">"{projectState.phases.phase2.concept.slogan}"</p>
-                     <p>{projectState.phases.phase2.concept.values}</p>
+                   <h3 className="text-2xl font-bold border-b border-black mb-4">2. Inmersión e Ideación</h3>
+                   
+                   {/* Part B Output */}
+                   <div className="mb-8">
+                     <h4 className="font-bold text-xl mb-2 text-indigo-800">Identidad y Concepto</h4>
+                     <div className="p-6 bg-slate-50 border rounded-lg">
+                       <h5 className="text-2xl font-serif font-bold text-slate-900 mb-1">{projectState.phases.phase2.concept.name || "Nombre por definir"}</h5>
+                       <p className="italic text-slate-600 border-b pb-4 mb-4">"{projectState.phases.phase2.concept.slogan}"</p>
+                       
+                       <div className="grid gap-4">
+                         <div><span className="font-bold">Filosofía:</span> {projectState.phases.phase2.concept.description}</div>
+                         <div><span className="font-bold">Valores:</span> {projectState.phases.phase2.concept.values}</div>
+                         <div><span className="font-bold">Público:</span> {projectState.phases.phase2.concept.targetAudience}</div>
+                       </div>
+                     </div>
                    </div>
-                   <h4 className="font-bold text-lg mb-2">Tabla de Productos Locales</h4>
-                   <table className="w-full text-sm text-left border-collapse mb-6">
+
+                   {/* Part A Output */}
+                   <h4 className="font-bold text-lg mb-2">Investigación de Mercado</h4>
+                   <p className="text-sm text-slate-500 mb-4">Recopilación del equipo</p>
+                   
+                   <table className="w-full text-sm text-left border-collapse mb-8">
                      <thead>
-                       <tr className="border-b border-slate-400">
-                         <th className="py-2">Producto</th>
-                         <th className="py-2">Productor</th>
-                         <th className="py-2">Temporada</th>
+                       <tr className="border-b border-slate-400 bg-slate-100">
+                         <th className="py-2 px-2">Producto</th>
+                         <th className="py-2 px-2">Productor</th>
+                         <th className="py-2 px-2">Investigador</th>
                        </tr>
                      </thead>
                      <tbody>
-                       {projectState.phases.phase2.products.map(p => (
-                         <tr key={p.id} className="border-b border-slate-100">
-                           <td className="py-2 font-medium">{p.name}</td>
-                           <td className="py-2">{p.producer}</td>
-                           <td className="py-2">{p.season}</td>
+                       {projectState.phases.phase2.products.map((p, i) => (
+                         <tr key={i} className="border-b border-slate-100">
+                           <td className="py-2 px-2 font-medium">{p.name}</td>
+                           <td className="py-2 px-2">{p.producer}</td>
+                           <td className="py-2 px-2 text-xs text-slate-500">{p.author || "-"}</td>
                          </tr>
                        ))}
                      </tbody>
                    </table>
+
+                   <h4 className="font-bold text-lg mb-2">Síntesis Grupal</h4>
+                   <div className="whitespace-pre-wrap leading-relaxed mb-8">{projectState.phases.phase2.synthesis || "Pendiente de redacción."}</div>
                  </section>
 
                  <section>

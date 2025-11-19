@@ -18,16 +18,30 @@ export const ROLES = [
 ];
 
 export const ODS_LIST = [
-  "1. Fin de la Pobreza", "2. Hambre Cero", "3. Salud y Bienestar", 
-  "5. Igualdad de Género", "8. Trabajo Decente", "12. Producción y Consumo Responsables", 
-  "13. Acción por el Clima"
+  "1. Fin de la Pobreza", "2. Hambre Cero", "3. Salud y Bienestar", "4. Educación de Calidad",
+  "5. Igualdad de Género", "6. Agua Limpia y Saneamiento", "7. Energía Asequible y No Contaminante",
+  "8. Trabajo Decente", "9. Industria, Innovación e Infraestructura", "10. Reducción de las Desigualdades",
+  "11. Ciudades y Comunidades Sostenibles", "12. Producción y Consumo Responsables", 
+  "13. Acción por el Clima", "14. Vida Submarina", "15. Vida de Ecosistemas Terrestres",
+  "16. Paz, Justicia e Instituciones Sólidas", "17. Alianzas para lograr los objetivos"
 ];
 
 export const INITIAL_PHASE_2: Phase2Data = {
+  // Part A
   products: [],
   competitors: [],
-  concept: { name: '', slogan: '', values: '' },
-  ods: []
+  demandAnalysis: [],
+  proposedODS: [],
+  // Part B
+  synthesis: '',
+  concept: { 
+    name: '', 
+    slogan: '', 
+    description: '',
+    values: '',
+    targetAudience: ''
+  },
+  finalODS: []
 };
 
 export const INITIAL_PHASE_4: Phase4Data = {
@@ -52,7 +66,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
 
 export const PHASES = [
   { id: 'phase1', title: 'Fase 1: Definición y Contexto', type: 'text', icon: 'MapPin' },
-  { id: 'phase2', title: 'Fase 2: Inmersión y Concepto', type: 'structured', icon: 'Search' },
+  { id: 'phase2', title: 'Fase 2: Inmersión e Ideación', type: 'structured', icon: 'Search' },
   { id: 'phase3', title: 'Fase 3: Diseño de Oferta', type: 'text', icon: 'Utensils' },
   { id: 'phase4', title: 'Fase 4: Ejecución Práctica', type: 'structured', icon: 'ChefHat' },
   { id: 'phase5', title: 'Fase 5: Conclusiones y Venta', type: 'text', icon: 'Target' },
