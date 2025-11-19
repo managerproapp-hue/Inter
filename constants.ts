@@ -100,16 +100,110 @@ export const INITIAL_PHASE_5: Phase5Data = {
 };
 
 export const CURRICULUM: Record<string, LearningOutcome[]> = {
-  "Proyecto Gastronómico": [
+  "Módulo de Proyecto (Principal)": [
     {
       code: "RA 1",
-      description: "Identifica necesidades del sector productivo, relacionándolas con proyectos afines que puedan satisfacerlas.",
-      criteria: ["a) Se han clasificado las empresas del sector.", "b) Se han analizado las características de la zona."]
+      description: "Analizar y caracterizar las empresas del sector según su estructura organizativa y la naturaleza de sus productos o servicios.",
+      criteria: [
+        "a) Se han identificado los modelos empresariales más representativos del sector.",
+        "b) Se ha descrito la estructura organizativa típica de estas empresas.",
+        "c) Se han definido las funciones y características de los principales departamentos.",
+        "d) Se ha especificado el rol y las responsabilidades de cada área funcional.",
+        "e) Se ha evaluado el volumen de negocio en función de las demandas y necesidades del cliente.",
+        "f) Se ha diseñado una estrategia adecuada para responder a dichas demandas.",
+        "g) Se ha valorado la dotación necesaria de recursos humanos y materiales.",
+        "h) Se ha implementado un sistema de seguimiento de resultados acorde con la estrategia definida.",
+        "i) Se ha establecido la relación entre los productos/servicios ofrecidos y su posible aporte a los ODS."
+      ]
     },
     {
       code: "RA 2",
-      description: "Diseña proyectos relacionados con las competencias expresadas en el título, incluyendo y desarrollando las fases que lo componen.",
-      criteria: ["a) Se ha definido la estructura organizativa.", "b) Se han previsto los recursos materiales y personales."]
+      description: "Proponer soluciones viables a las necesidades del sector, considerando costes y desarrollando un proyecto básico.",
+      criteria: [
+        "a) Se han detectado y priorizado las necesidades del sector.",
+        "b) Se han generado, en equipo, propuestas de solución.",
+        "c) Se ha recopilado información relevante sobre las soluciones planteadas.",
+        "d) Se han incorporado elementos innovadores con potencial de aplicación práctica.",
+        "e) Se ha realizado un análisis de viabilidad técnica de las propuestas.",
+        "f) Se han definido las partes esenciales que componen el proyecto.",
+        "g) Se ha estimado la dotación de recursos humanos y materiales requeridos.",
+        "h) Se ha elaborado un presupuesto económico detallado.",
+        "i) Se ha redactado la documentación técnica necesaria para el diseño del proyecto.",
+        "j) Se han considerado los aspectos de calidad inherentes al proyecto.",
+        "k) Se ha presentado públicamente el contenido más relevante del proyecto propuesto."
+      ]
+    },
+    {
+      code: "RA 3",
+      description: "Planificar la ejecución de las actividades derivadas de la solución propuesta, definiendo un plan de intervención y su documentación asociada.",
+      criteria: [
+        "a) Se ha establecido una cronología detallada para cada actividad.",
+        "b) Se han asignado los recursos y la logística necesarios para cada fase.",
+        "c) Se han identificado los permisos o autorizaciones obligatorios, en caso de requerirse.",
+        "d) Se han detectado las actividades con riesgos potenciales durante su ejecución.",
+        "e) Se ha integrado el plan de prevención de riesgos laborales y se han previsto los equipos de protección necesarios.",
+        "f) Se han asignado recursos humanos y materiales específicos a cada tarea.",
+        "g) Se han contemplado posibles contingencias o imprevistos.",
+        "h) Se han diseñado medidas correctivas para hacer frente a dichos imprevistos.",
+        "i) Se ha elaborado toda la documentación técnica y administrativa requerida."
+      ]
+    },
+    {
+      code: "RA 4",
+      description: "Supervisar la ejecución de las actividades, asegurando el cumplimiento del plan establecido.",
+      criteria: [
+        "a) Se ha definido un procedimiento claro para el seguimiento de las actividades.",
+        "b) Se ha verificado que los resultados obtenidos cumplen con los estándares de calidad esperados.",
+        "c) Se han detectado desviaciones respecto al plan inicial o a los resultados previstos.",
+        "d) Se ha comunicado oportunamente cualquier desviación relevante a los responsables.",
+        "e) Se han implementado y documentado las acciones correctivas necesarias.",
+        "f) Se ha generado la documentación final para la evaluación integral de las actividades y del proyecto global."
+      ]
+    },
+    {
+      code: "RA 5",
+      description: "Comunicar información de forma clara, ordenada y estructurada, tanto interna como externamente.",
+      criteria: [
+        "a) Se ha mantenido una actitud metódica y organizada en la transmisión de la información.",
+        "b) Se ha facilitado comunicación verbal efectiva, tanto en horizontal como en vertical.",
+        "c) Se ha utilizado herramientas informáticas para la comunicación interna en el equipo.",
+        "d) Se ha adquirido familiaridad con la terminología técnica del sector en otros idiomas de uso internacional."
+      ]
+    }
+  ],
+  "Productos Culinarios (0048)": [
+    {
+      code: "RA 1",
+      description: "Organiza los procesos productivos y de servicio en cocina, interpretando información oral o escrita.",
+      criteria: [
+        "a) Se han identificado y caracterizado los distintos ámbitos de producción y servicio en cocina."
+      ]
+    },
+    {
+      code: "RA 3",
+      description: "Elabora productos culinarios a partir de un conjunto de materias primas, evaluando alternativas creativas y funcionales.",
+      criteria: [
+        "b) Se ha valorado el aprovechamiento integral de los recursos disponibles (materias primas, tiempos, técnicas).",
+        "c) Se han diseñado elaboraciones que combinan los ingredientes de manera lógica, equilibrada y creativa."
+      ]
+    }
+  ],
+  "Postres en Restauración (0028)": [
+    {
+      code: "RA 7",
+      description: "Presenta postres emplatados a partir de elaboraciones de pastelería y repostería, integrando criterios estéticos y funcionales.",
+      criteria: [
+        "c) Se han aplicado técnicas de presentación y decoración acordes a las características del producto final y al contexto de servicio, garantizando equilibrio visual, textural y conceptual."
+      ]
+    }
+  ],
+  "Ofertas Gastronómicas (0045)": [
+    {
+      code: "RA 4",
+      description: "Calcula el coste global de la oferta gastronómica, analizando y ponderando todas las variables que lo componen.",
+      criteria: [
+        "d) Se han calculado y valorado los costes asociados a cada elaboración de cocina y/o pastelería/repostería, incluyendo materias primas, mano de obra, desperdicios, energía y otros gastos indirectos, con el fin de garantizar la viabilidad económica de la oferta."
+      ]
     }
   ]
 };

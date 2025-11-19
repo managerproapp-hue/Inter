@@ -630,7 +630,37 @@ export default function App() {
              </div>
           )}
           {view === 'curriculum' && (
-            <div className="space-y-6">{Object.entries(CURRICULUM).map(([moduleName, outcomes]) => (<div key={moduleName} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"><h3 className="text-indigo-600 font-bold uppercase tracking-wide text-sm mb-4">{moduleName}</h3><div className="space-y-6">{outcomes.map(ra => (<div key={ra.code}><div className="font-bold text-slate-800 mb-2">{ra.code} - {ra.description}</div><ul className="list-disc list-inside text-sm text-slate-600 space-y-1 pl-2">{ra.criteria.map(c => <li key={c}>{c}</li>)}</ul></div>))}</div></div>))}</div>
+            <div className="space-y-6">
+              {Object.entries(CURRICULUM).map(([moduleName, outcomes]) => (
+                <div key={moduleName} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                   <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+                      <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
+                      <h3 className="text-indigo-800 font-bold text-lg uppercase tracking-wide">{moduleName}</h3>
+                   </div>
+                   <div className="space-y-6">
+                      {outcomes.map(ra => (
+                         <div key={ra.code} className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <div className="font-bold text-slate-900 mb-2 flex items-start gap-2">
+                               <span className="bg-slate-800 text-white text-xs px-2 py-0.5 rounded mt-0.5">{ra.code}</span>
+                               <span>{ra.description}</span>
+                            </div>
+                            <div className="mt-3 pl-4 border-l-2 border-indigo-200">
+                               <p className="text-xs font-bold text-slate-500 uppercase mb-2">Criterios de Evaluación:</p>
+                               <ul className="space-y-1 text-sm text-slate-700">
+                                  {ra.criteria.map(c => (
+                                     <li key={c} className="leading-relaxed">{c}</li>
+                                  ))}
+                               </ul>
+                            </div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+              ))}
+              <div className="text-center text-xs text-slate-400 pt-8 pb-4">
+                Fuente: BOLETÍN OFICIAL DEL ESTADO. Núm. 129, Martes 28 de mayo de 2024, Sec. I. Pág. 61079. cve: BOE-A-2024-10684.
+              </div>
+            </div>
           )}
           {view === 'print' && (
             <div className="bg-white min-h-screen p-10 md:p-16 shadow-2xl print:shadow-none max-w-4xl mx-auto text-black" style={{ fontFamily: 'Calibri, sans-serif', fontSize: '11pt', lineHeight: '1.15' }}>
