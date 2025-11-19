@@ -402,14 +402,16 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
 
 // --- NEW: Phase 4 Editor (Memoria Parcial y Consolidación) ---
 export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
-  const state: Phase4Data = data || INITIAL_PHASE_4;
+  // Defensive merge to ensure state is fully populated even if data is partial (prevents blank screen)
+  const state: Phase4Data = { ...INITIAL_PHASE_4, ...(data || {}) };
+  
   const [activeTab, setActiveTab] = useState<'Intro' | 'Analysis' | 'Design' | 'Planning'>('Intro');
   const updateField = (field: keyof Phase4Data, value: any) => onUpdate({ ...state, [field]: value });
 
-  const addActivity = () => updateField('timeline', [...state.timeline, { id: Date.now().toString(), activity: '', dates: '', resources: '' }]);
-  const removeActivity = (idx: number) => { const n = [...state.timeline]; n.splice(idx, 1); updateField('timeline', n); };
+  const addActivity = () => updateField('timeline', [...(state.timeline || []), { id: Date.now().toString(), activity: '', dates: '', resources: '' }]);
+  const removeActivity = (idx: number) => { const n = [...(state.timeline || [])]; n.splice(idx, 1); updateField('timeline', n); };
   const updateActivity = (idx: number, field: keyof PlanningActivity, val: string) => {
-     const n = [...state.timeline];
+     const n = [...(state.timeline || [])];
      n[idx] = { ...n[idx], [field]: val };
      updateField('timeline', n);
   };
@@ -506,7 +508,7 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
                   <button onClick={addActivity} className="text-xs flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100"><Plus className="w-3 h-3"/> Añadir Actividad</button>
                </div>
                <div className="space-y-3">
-                  {state.timeline.map((act, idx) => (
+                  {(state.timeline || []).map((act, idx) => (
                      <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-slate-50 p-3 rounded border border-slate-100 relative">
                         <div className="md:col-span-5">
                            <input className="w-full p-2 border rounded text-sm font-bold" placeholder="Actividad" value={act.activity} onChange={(e) => updateActivity(idx, 'activity', e.target.value)} />
@@ -522,7 +524,7 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
                         </div>
                      </div>
                   ))}
-                  {state.timeline.length === 0 && <p className="text-xs text-slate-400 italic">No hay actividades planificadas.</p>}
+                  {(state.timeline || []).length === 0 && <p className="text-xs text-slate-400 italic">No hay actividades planificadas.</p>}
                </div>
             </div>
             <div>
