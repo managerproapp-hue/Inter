@@ -153,13 +153,14 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
         <div className="bg-slate-800 p-6 text-white flex flex-col md:flex-row justify-between items-start gap-4">
           <div className="flex items-center gap-4">
             {config.schoolLogo && (
-               <div className="bg-white p-1 rounded-lg w-16 h-16 flex items-center justify-center flex-shrink-0">
-                  <img src={config.schoolLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+               <div className="bg-white p-2 rounded-lg w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <img src={config.schoolLogo} alt="Logo" className="w-full h-full object-contain" />
                </div>
             )}
             <div>
               <h2 className="text-2xl font-bold">{config.projectName || 'Proyecto Sin Nombre'}</h2>
               <p className="text-slate-400 mt-1 text-lg">{config.teamName || 'Equipo Sin Nombre'}</p>
+              {config.schoolName && <p className="text-xs text-indigo-300 mt-2 uppercase tracking-wider font-bold">{config.schoolName}</p>}
             </div>
           </div>
           <div className="text-left md:text-right">
@@ -755,523 +756,414 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   );
 };
 
-// --- Structured Phase 4 Editor (Execution & Costs) ---
+// --- Structured Phase 4 Editor (Tarea 4 - Costes y Ejecución) ---
 export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, phase3Data }) => {
   const state: Phase4Data = data || INITIAL_PHASE_4;
-  const [activeTab, setActiveTab] = useState<'Costs' | 'Execution'>('Costs');
+  const menu = phase3Data?.menu || [];
+  const [activeTab, setActiveTab] = useState<'Financials' | 'Sensory' | 'Report'>('Financials');
 
   const updateField = (field: keyof Phase4Data, value: any) => {
     onUpdate({ ...state, [field]: value });
   };
 
   // Financial Helpers
+  const addFinancial = (dishId: string) => {
+    if (state.financials.find(f => f.dishId === dishId)) return; // Already exists
+    const newFinancial: DishFinancial = {
+      dishId,
+      totalCost: 0,
+      sellingPrice: 0,
+      ingredients: []
+    };
+    updateField('financials', [...state.financials, newFinancial]);
+  };
+
+  const removeFinancial = (dishId: string) => {
+    updateField('financials', state.financials.filter(f => f.dishId !== dishId));
+  };
+
+  const updateFinancial = (dishId: string, field: keyof DishFinancial, value: any) => {
+    const newFinancials = state.financials.map(f => f.dishId === dishId ? { ...f, [field]: value } : f);
+    updateField('financials', newFinancials);
+  };
+  
   const addIngredient = (dishId: string) => {
-     const financials = [...(state.financials || [])];
-     let entry = financials.find(f => f.dishId === dishId);
-     
-     if (!entry) {
-        entry = { dishId, totalCost: 0, sellingPrice: 0, ingredients: [] };
-        financials.push(entry);
-     }
-     
-     entry.ingredients.push({ name: '', quantity: '', price: 0 });
-     updateField('financials', financials);
+      const fin = state.financials.find(f => f.dishId === dishId);
+      if(!fin) return;
+      const newIng: IngredientCost = { name: '', quantity: '', price: 0 };
+      const newIngs = [...fin.ingredients, newIng];
+      
+      // Auto calc total
+      const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+      const newFinancials = state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f);
+      updateField('financials', newFinancials);
   };
 
   const updateIngredient = (dishId: string, idx: number, field: keyof IngredientCost, val: any) => {
-     const financials = [...(state.financials || [])];
-     const entry = financials.find(f => f.dishId === dishId);
-     if(entry) {
-       (entry.ingredients[idx] as any)[field] = val;
-       // Recalculate total
-       entry.totalCost = entry.ingredients.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
-       updateField('financials', financials);
-     }
+      const fin = state.financials.find(f => f.dishId === dishId);
+      if(!fin) return;
+      const newIngs = [...fin.ingredients];
+      newIngs[idx] = { ...newIngs[idx], [field]: val };
+
+      // Auto calc total if price changes
+      const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+      const newFinancials = state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f);
+      updateField('financials', newFinancials);
   };
 
-  // Dish Eval Helpers
-  const addDishEval = () => {
-    const newDish: DishEval = { id: Date.now().toString(), dishName: '', expectation: '', reality: '', waste: '' };
-    updateField('dishes', [...state.dishes, newDish]);
+    const removeIngredient = (dishId: string, idx: number) => {
+      const fin = state.financials.find(f => f.dishId === dishId);
+      if(!fin) return;
+      const newIngs = [...fin.ingredients];
+      newIngs.splice(idx, 1);
+
+      // Auto calc total
+      const totalCost = newIngs.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+      const newFinancials = state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost } : f);
+      updateField('financials', newFinancials);
   };
 
-  const removeDishEval = (id: string) => {
-    updateField('dishes', state.dishes.filter(d => d.id !== id));
+  // Sensory Helpers
+  const addSensory = () => {
+    updateField('dishes', [...state.dishes, { id: Date.now().toString(), dishName: '', expectation: '', reality: '', waste: '' }]);
+  };
+  const removeSensory = (idx: number) => {
+      const n = [...state.dishes]; n.splice(idx, 1); updateField('dishes', n);
   };
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex gap-4 mb-4 border-b border-slate-200 pb-1">
-        <button 
-          onClick={() => setActiveTab('Costs')}
-          className={`px-4 py-2 font-bold rounded-t-lg transition-colors ${activeTab === 'Costs' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          1. Creación de Costes (Escandallos)
-        </button>
-        <button 
-          onClick={() => setActiveTab('Execution')}
-          className={`px-4 py-2 font-bold rounded-t-lg transition-colors ${activeTab === 'Execution' ? 'bg-blue-50 text-blue-800 border-b-2 border-blue-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          2. Ejecución y Cierre
-        </button>
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+         <button onClick={() => setActiveTab('Financials')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Financials' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>1. Escandallos (Costes)</button>
+         <button onClick={() => setActiveTab('Sensory')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Sensory' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>2. Análisis Sensorial</button>
+         <button onClick={() => setActiveTab('Report')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Report' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>3. Informe Brigada</button>
       </div>
 
-      {activeTab === 'Costs' && (
-         <div className="space-y-8 animate-in fade-in">
-            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 text-sm text-emerald-800 flex gap-3 items-start">
-               <Calculator className="w-5 h-5 flex-shrink-0 mt-0.5" />
-               <div>
-                 <p className="font-bold">Calculadora de Escandallos:</p>
-                 <p>Selecciona los platos diseñados en la Fase 3 y calcula el coste de materia prima para determinar el precio de venta.</p>
-               </div>
-            </div>
+      {activeTab === 'Financials' && (
+          <div className="space-y-6 animate-in fade-in">
+             <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm border border-blue-100 flex gap-3">
+                 <DollarSign className="w-5 h-5 flex-shrink-0"/>
+                 <div>
+                   <p className="font-bold">Cálculo de Costes:</p>
+                   <p>Selecciona platos de la Fase 3 y calcula su coste real sumando ingredientes.</p>
+                 </div>
+             </div>
 
-            {!phase3Data?.menu || phase3Data.menu.length === 0 ? (
-               <p className="text-center text-slate-500 py-10">Primero debes añadir platos en la Fase 3.</p>
-            ) : (
-               <div className="space-y-6">
-                  {phase3Data.menu.map(dish => {
-                     const finance = state.financials?.find(f => f.dishId === dish.id) || { totalCost: 0, sellingPrice: 0, ingredients: [] };
-                     
-                     return (
-                        <div key={dish.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                           <div className="flex justify-between items-center mb-4">
-                              <h3 className="font-bold text-slate-800 text-lg">{dish.name} <span className="text-xs text-slate-400 font-normal">({dish.category})</span></h3>
-                              <div className="text-right">
-                                 <div className="text-xs text-slate-500 uppercase font-bold">Coste Total</div>
-                                 <div className="text-xl font-bold text-emerald-600">{finance.totalCost.toFixed(2)}€</div>
+             <div className="flex gap-2 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <select className="p-2 border rounded flex-1" id="dishSelect">
+                   <option value="">-- Seleccionar Plato para Escandallar --</option>
+                   {menu.filter(m => !state.financials.find(f => f.dishId === m.id)).map(m => (
+                       <option key={m.id} value={m.id}>{m.name}</option>
+                   ))}
+                </select>
+                <button 
+                   onClick={() => { 
+                       const select = document.getElementById('dishSelect') as HTMLSelectElement;
+                       if(select.value) { addFinancial(select.value); select.value = ''; }
+                   }}
+                   className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-indigo-500"
+                >
+                    Añadir Escandallo
+                </button>
+             </div>
+
+             <div className="space-y-4">
+                {state.financials.map(fin => {
+                   const dish = menu.find(m => m.id === fin.dishId);
+                   return (
+                     <div key={fin.dishId} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div className="flex justify-between items-center mb-4">
+                           <h3 className="font-bold text-lg text-slate-800">{dish?.name || 'Plato Eliminado'}</h3>
+                           <button onClick={() => removeFinancial(fin.dishId)} className="text-red-500 text-xs hover:underline">Eliminar Escandallo</button>
+                        </div>
+                        
+                        <div className="mb-4">
+                           <table className="w-full text-sm">
+                             <thead>
+                               <tr className="bg-slate-50 text-slate-500"><th className="p-2 text-left">Ingrediente</th><th className="p-2 text-left">Cantidad</th><th className="p-2 text-right">Precio (€)</th><th className="p-2"></th></tr>
+                             </thead>
+                             <tbody>
+                               {fin.ingredients.map((ing, idx) => (
+                                  <tr key={idx} className="border-b border-slate-100">
+                                     <td className="p-2"><input className="w-full bg-transparent border-none focus:ring-0" placeholder="Nombre" value={ing.name} onChange={(e) => updateIngredient(fin.dishId, idx, 'name', e.target.value)} /></td>
+                                     <td className="p-2"><input className="w-full bg-transparent border-none focus:ring-0" placeholder="Ej: 200g" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} /></td>
+                                     <td className="p-2"><input type="number" step="0.01" className="w-full bg-transparent border-none focus:ring-0 text-right" value={ing.price} onChange={(e) => updateIngredient(fin.dishId, idx, 'price', parseFloat(e.target.value))} /></td>
+                                     <td className="p-2 text-center"><button onClick={() => removeIngredient(fin.dishId, idx)}><X className="w-3 h-3 text-slate-400 hover:text-red-500"/></button></td>
+                                  </tr>
+                               ))}
+                             </tbody>
+                           </table>
+                           <button onClick={() => addIngredient(fin.dishId)} className="mt-2 text-xs text-indigo-600 font-medium flex items-center gap-1"><Plus className="w-3 h-3"/> Añadir Ingrediente</button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                           <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase">Coste Total</label>
+                              <div className="text-xl font-bold text-slate-700">{fin.totalCost.toFixed(2)} €</div>
+                           </div>
+                           <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase">Precio Venta (PVR)</label>
+                              <input type="number" step="0.10" className="w-full p-1 border rounded bg-white font-bold text-lg" value={fin.sellingPrice} onChange={(e) => updateFinancial(fin.dishId, 'sellingPrice', parseFloat(e.target.value))} />
+                           </div>
+                           <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase">Margen Bruto</label>
+                              <div className={`text-xl font-bold ${fin.sellingPrice > fin.totalCost ? 'text-emerald-600' : 'text-red-500'}`}>
+                                 {fin.sellingPrice > 0 ? ((fin.sellingPrice - fin.totalCost) / fin.sellingPrice * 100).toFixed(1) : '0'}%
                               </div>
                            </div>
-
-                           <div className="mb-4">
-                              <table className="w-full text-sm">
-                                 <thead>
-                                    <tr className="bg-slate-50 text-slate-500">
-                                       <th className="text-left p-2 rounded-l">Ingrediente</th>
-                                       <th className="text-left p-2">Cantidad</th>
-                                       <th className="text-right p-2 rounded-r">Coste (€)</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody>
-                                    {finance.ingredients.map((ing, idx) => (
-                                       <tr key={idx} className="border-b border-slate-100">
-                                          <td className="p-2"><input className="w-full bg-transparent outline-none" placeholder="Ej: Arroz Bomba" value={ing.name} onChange={(e) => updateIngredient(dish.id, idx, 'name', e.target.value)} /></td>
-                                          <td className="p-2"><input className="w-full bg-transparent outline-none" placeholder="100g" value={ing.quantity} onChange={(e) => updateIngredient(dish.id, idx, 'quantity', e.target.value)} /></td>
-                                          <td className="p-2"><input type="number" className="w-full bg-transparent outline-none text-right" placeholder="0.00" value={ing.price} onChange={(e) => updateIngredient(dish.id, idx, 'price', parseFloat(e.target.value))} /></td>
-                                       </tr>
-                                    ))}
-                                 </tbody>
-                              </table>
-                              <button onClick={() => addIngredient(dish.id)} className="mt-2 text-xs text-indigo-600 font-bold flex items-center gap-1 hover:underline"><Plus className="w-3 h-3"/> Añadir Ingrediente</button>
-                           </div>
-                           
-                           <div className="bg-slate-50 p-4 rounded-lg flex items-center justify-between">
-                               <label className="text-sm font-bold text-slate-700">Precio de Venta Recomendado (PVR):</label>
-                               <input 
-                                 type="number" 
-                                 className="p-2 border border-slate-300 rounded w-32 text-right font-bold text-slate-800" 
-                                 placeholder="0.00"
-                                 value={finance.sellingPrice || ''}
-                                 onChange={(e) => {
-                                    const financials = [...(state.financials || [])];
-                                    const entry = financials.find(f => f.dishId === dish.id);
-                                    if(!entry) { // Create if only editing price directly
-                                       financials.push({ dishId: dish.id, totalCost: 0, sellingPrice: parseFloat(e.target.value), ingredients: [] });
-                                    } else {
-                                       entry.sellingPrice = parseFloat(e.target.value);
-                                    }
-                                    updateField('financials', financials);
-                                 }}
-                               />
-                           </div>
                         </div>
-                     )
-                  })}
-               </div>
-            )}
-         </div>
+                     </div>
+                   );
+                })}
+             </div>
+          </div>
       )}
 
-      {activeTab === 'Execution' && (
-         <div className="space-y-8 animate-in fade-in">
-            {/* Dishes Evaluation */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-slate-800">Autoevaluación Sensorial</h3>
-                {!isReadOnly && (
-                  <button onClick={addDishEval} className="flex items-center gap-1 text-emerald-600 font-medium text-sm">
-                    <Plus className="w-4 h-4" /> Evaluar Plato
-                  </button>
-                )}
-              </div>
-              <div className="grid gap-6">
-                {state.dishes.map((dish, idx) => (
-                  <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative group">
-                    {!isReadOnly && (
-                      <button onClick={() => removeDishEval(dish.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    <div className="mb-3">
-                      <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Nombre del Plato</label>
-                      <input
-                        className="w-full p-2 border rounded bg-white"
-                        value={dish.dishName}
-                        onChange={(e) => {
-                          const newDishes = [...state.dishes];
-                          newDishes[idx].dishName = e.target.value;
-                          updateField('dishes', newDishes);
-                        }}
-                        disabled={isReadOnly}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Expectativa</label>
-                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.expectation} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].expectation=e.target.value; updateField('dishes', newDishes)}} />
+      {activeTab === 'Sensory' && (
+          <div className="space-y-6 animate-in fade-in">
+             <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800">Registro de Catas y Pruebas</h3>
+                <button onClick={addSensory} className="text-indigo-600 text-sm flex items-center gap-1"><Plus className="w-4 h-4"/> Añadir Cata</button>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {state.dishes.map((d, idx) => (
+                   <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative">
+                      <button onClick={() => removeSensory(idx)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                      <div className="space-y-3">
+                         <div><label className="text-xs font-bold text-slate-500">Plato o Elaboración</label><input className="w-full p-2 border rounded font-bold" value={d.dishName} onChange={(e) => {const n=[...state.dishes]; n[idx].dishName=e.target.value; updateField('dishes', n)}} /></div>
+                         <div><label className="text-xs font-bold text-slate-500">Expectativa (Lo que esperabas)</label><textarea className="w-full p-2 border rounded h-16 text-sm" value={d.expectation} onChange={(e) => {const n=[...state.dishes]; n[idx].expectation=e.target.value; updateField('dishes', n)}} /></div>
+                         <div><label className="text-xs font-bold text-slate-500">Realidad (Resultado final)</label><textarea className="w-full p-2 border rounded h-16 text-sm" value={d.reality} onChange={(e) => {const n=[...state.dishes]; n[idx].reality=e.target.value; updateField('dishes', n)}} /></div>
+                         <div><label className="text-xs font-bold text-slate-500">Desperdicio Generado</label><input className="w-full p-2 border rounded text-sm" value={d.waste} onChange={(e) => {const n=[...state.dishes]; n[idx].waste=e.target.value; updateField('dishes', n)}} /></div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Realidad (Resultado)</label>
-                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.reality} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].reality=e.target.value; updateField('dishes', newDishes)}} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Análisis de Mermas</label>
-                        <textarea className="w-full p-2 border rounded bg-white h-20 text-sm" value={dish.waste} onChange={(e) => {const newDishes=[...state.dishes]; newDishes[idx].waste=e.target.value; updateField('dishes', newDishes)}} />
-                      </div>
-                    </div>
-                  </div>
+                   </div>
                 ))}
-                {state.dishes.length === 0 && <p className="text-slate-400 text-sm italic text-center">No hay platos evaluados.</p>}
-              </div>
-            </div>
+             </div>
+          </div>
+      )}
 
-            {/* Brigade Report */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-               <h3 className="text-lg font-bold text-slate-800 mb-2">Informe de Brigada</h3>
-               <p className="text-sm text-slate-500 mb-4">Describe el rendimiento del equipo, problemas de comunicación y soluciones aplicadas.</p>
-               <textarea
-                  className="w-full p-4 border rounded-lg h-40 bg-slate-50 focus:bg-white transition-colors"
-                  value={state.brigadeReport}
-                  onChange={(e) => updateField('brigadeReport', e.target.value)}
-                  placeholder="Redacta aquí el informe..."
-               />
-            </div>
-         </div>
+      {activeTab === 'Report' && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col animate-in fade-in">
+             <h3 className="text-lg font-bold text-slate-800 mb-2">Informe de Brigada y Ejecución</h3>
+             <p className="text-sm text-slate-500 mb-4">Describe cómo se organizó el equipo en cocina, problemas surgidos durante el servicio y soluciones aplicadas.</p>
+             <textarea 
+                className="w-full flex-1 p-4 border border-slate-200 rounded-lg resize-none min-h-[300px]"
+                value={state.brigadeReport}
+                onChange={(e) => updateField('brigadeReport', e.target.value)}
+                placeholder="Redacta aquí el informe de ejecución..."
+             />
+          </div>
       )}
     </div>
   );
 };
 
-// --- Phase 5 Editor (Updated for Official Memory Index) ---
+// --- Structured Phase 5 Editor (Tarea 5 - Memoria y Defensa) ---
 export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config }) => {
   const state: Phase5Data = data || INITIAL_PHASE_5;
-  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Links' | 'CoEval'>('Checklist');
-  const [newEval, setNewEval] = useState<{ target: string, score: number, justification: string }>({ target: '', score: 0, justification: '' });
+  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Defense' | 'CoEval'>('Checklist');
 
   const updateField = (field: keyof Phase5Data, value: any) => {
     onUpdate({ ...state, [field]: value });
   };
 
-  const toggleCheck = (key: keyof typeof state.individualChecklist) => {
-    updateField('individualChecklist', {
-       ...state.individualChecklist,
-       [key]: !state.individualChecklist[key]
-    });
+  // CoEval Helpers
+  const addCoEval = () => {
+      if(!currentUser) { alert("Selecciona tu usuario en el menú lateral primero."); return; }
+      const newEval: CoEvaluationEntry = {
+          id: Date.now().toString(),
+          reviewer: currentUser,
+          target: '',
+          justification: '',
+          score: 0,
+          timestamp: new Date().toISOString()
+      };
+      updateField('coEvaluations', [...state.coEvaluations, newEval]);
+  };
+  
+  const updateCoEval = (id: string, field: keyof CoEvaluationEntry, val: any) => {
+      const newEvals = state.coEvaluations.map(c => c.id === id ? { ...c, [field]: val } : c);
+      updateField('coEvaluations', newEvals);
   };
 
-  // CoEvaluation Logic
-  const handleAddCoEval = () => {
-    if(!currentUser) return alert("Debes seleccionar tu usuario en la barra lateral primero.");
-    if(!newEval.target) return alert("Selecciona a quién evalúas.");
-    if(!newEval.justification) return alert("Escribe una justificación.");
-
-    const entry: CoEvaluationEntry = {
-       id: Date.now().toString(),
-       reviewer: currentUser,
-       target: newEval.target,
-       justification: newEval.justification,
-       score: newEval.score,
-       timestamp: new Date().toISOString()
-    };
-
-    updateField('coEvaluations', [...(state.coEvaluations || []), entry]);
-    setNewEval({ target: '', score: 0, justification: '' });
-  };
-
-  const handleDeleteCoEval = (id: string) => {
-    updateField('coEvaluations', state.coEvaluations.filter(c => c.id !== id));
+  const removeCoEval = (id: string) => {
+      updateField('coEvaluations', state.coEvaluations.filter(c => c.id !== id));
   };
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex gap-2 mb-4 border-b border-slate-200 pb-1 overflow-x-auto">
-        <button 
-          onClick={() => setActiveTab('Checklist')}
-          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Checklist' ? 'bg-purple-50 text-purple-800 border-b-2 border-purple-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          A. Individual
-        </button>
-        <button 
-          onClick={() => setActiveTab('Memory')}
-          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Memory' ? 'bg-indigo-50 text-indigo-800 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          B. Memoria Oficial
-        </button>
-        <button 
-          onClick={() => setActiveTab('Links')}
-          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'Links' ? 'bg-emerald-50 text-emerald-800 border-b-2 border-emerald-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          C. Enlaces
-        </button>
-        <button 
-          onClick={() => setActiveTab('CoEval')}
-          className={`px-4 py-2 font-bold whitespace-nowrap rounded-t-lg transition-colors ${activeTab === 'CoEval' ? 'bg-red-50 text-red-800 border-b-2 border-red-500' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          🔥 Coevaluación Diabólica
-        </button>
+       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+         <button onClick={() => setActiveTab('Checklist')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Checklist' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>1. Checklist Entrega</button>
+         <button onClick={() => setActiveTab('Memory')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Memory' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>2. Redacción Memoria</button>
+         <button onClick={() => setActiveTab('Defense')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Defense' ? 'bg-indigo-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>3. Enlaces Defensa</button>
+         <button onClick={() => setActiveTab('CoEval')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'CoEval' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-800 hover:bg-red-50'}`}>4. Coevaluación Diabólica</button>
       </div>
 
       {activeTab === 'Checklist' && (
-         <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
-             <div className="flex items-center gap-4 mb-6 border-b pb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600"><FileCheck className="w-6 h-6"/></div>
-                <div>
-                   <h3 className="text-xl font-bold text-slate-800">Preparación Individual</h3>
-                   <p className="text-slate-500 text-sm">Valida tu trabajo antes de la defensa oral.</p>
-                </div>
-             </div>
-             
-             <div className="space-y-4">
-                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.investigationDone} onChange={() => toggleCheck('investigationDone')} />
+          <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
+             <h3 className="text-xl font-bold text-slate-800 mb-6">Checklist Final de Entrega</h3>
+             <div className="space-y-4 max-w-2xl">
+                <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" checked={state.individualChecklist.investigationDone} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, investigationDone: e.target.checked})} />
                    <div>
-                      <div className="font-bold text-slate-700">Investigación Completa</div>
-                      <div className="text-xs text-slate-500">He revisado que mis aportes de la Fase 1 y 2 están en la memoria.</div>
+                      <span className="font-bold text-slate-800 block">Investigación Completada</span>
+                      <span className="text-sm text-slate-500">He analizado la zona y definido las tendencias (Fase 2).</span>
                    </div>
                 </label>
-                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.dishesDesigned} onChange={() => toggleCheck('dishesDesigned')} />
+                <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" checked={state.individualChecklist.dishesDesigned} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, dishesDesigned: e.target.checked})} />
                    <div>
-                      <div className="font-bold text-slate-700">Platos Diseñados y Costeados</div>
-                      <div className="text-xs text-slate-500">Mis 4 platos tienen foto, receta y precio calculado.</div>
+                      <span className="font-bold text-slate-800 block">Diseño de Platos</span>
+                      <span className="text-sm text-slate-500">He aportado mis elaboraciones y fotos a la carta (Fase 3).</span>
                    </div>
                 </label>
-                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.selfEvalDone} onChange={() => toggleCheck('selfEvalDone')} />
+                <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" checked={state.individualChecklist.selfEvalDone} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, selfEvalDone: e.target.checked})} />
                    <div>
-                      <div className="font-bold text-slate-700">Autoevaluación Realizada</div>
-                      <div className="text-xs text-slate-500">He completado la ficha de cata y análisis de mermas.</div>
+                      <span className="font-bold text-slate-800 block">Autoevaluación Financiera</span>
+                      <span className="text-sm text-slate-500">He calculado los costes de mis platos (Fase 4).</span>
                    </div>
                 </label>
-                <label className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                   <input type="checkbox" className="w-6 h-6 text-purple-600 rounded focus:ring-purple-500" checked={state.individualChecklist.defensePrepared} onChange={() => toggleCheck('defensePrepared')} />
+                <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                   <input type="checkbox" className="w-6 h-6 text-indigo-600 rounded focus:ring-indigo-500" checked={state.individualChecklist.defensePrepared} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, defensePrepared: e.target.checked})} />
                    <div>
-                      <div className="font-bold text-slate-700">Defensa Ensayada</div>
-                      <div className="text-xs text-slate-500">Conozco mi parte de la exposición y posibles preguntas.</div>
+                      <span className="font-bold text-slate-800 block">Preparación Defensa</span>
+                      <span className="text-sm text-slate-500">He revisado mi parte del guion para la exposición oral.</span>
                    </div>
                 </label>
              </div>
-         </div>
+          </div>
       )}
 
       {activeTab === 'Memory' && (
-         <div className="space-y-8 animate-in fade-in">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-blue-800 text-sm flex gap-2">
-              <FileText className="w-5 h-5 flex-shrink-0" />
-              <div>
-                 <p className="font-bold">Rellena los apartados faltantes del Índice Oficial:</p>
-                 <p>Esta sección complementa las Fases 1-4 para generar el PDF final según normativa.</p>
-              </div>
+          <div className="space-y-6 animate-in fade-in">
+             <div className="bg-indigo-50 p-4 rounded-lg text-indigo-800 text-sm border border-indigo-100">
+                <p className="font-bold">Montaje de la Memoria Oficial</p>
+                <p>Redactad aquí los apartados normativos que faltan. El resto se rellenará automáticamente con lo trabajado en las fases anteriores.</p>
+             </div>
+
+             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2">2. Resumen (Abstract)</label>
+                   <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Breve sinopsis del proyecto..." value={state.abstract} onChange={(e) => updateField('abstract', e.target.value)} />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">3.2. Objetivos del Proyecto</label>
+                      <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.projectObjectives} onChange={(e) => updateField('projectObjectives', e.target.value)} />
+                   </div>
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">3.3. Alcance y Limitaciones</label>
+                      <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.projectScope} onChange={(e) => updateField('projectScope', e.target.value)} />
+                   </div>
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2">4.4. Riesgos Laborales (Prevención)</label>
+                   <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Identificación de riesgos en cocina y medidas..." value={state.occupationalRisks} onChange={(e) => updateField('occupationalRisks', e.target.value)} />
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2">5.1. Metodología Empleada</label>
+                   <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.methodology} onChange={(e) => updateField('methodology', e.target.value)} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                       <label className="block text-sm font-bold text-slate-700 mb-2">6.1. Análisis de Resultados</label>
+                       <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Valoración global de los datos obtenidos..." value={state.resultsAnalysis} onChange={(e) => updateField('resultsAnalysis', e.target.value)} />
+                    </div>
+                    <div>
+                       <label className="block text-sm font-bold text-slate-700 mb-2">7. Conclusiones y Recomendaciones</label>
+                       <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Cierre final del proyecto..." value={state.finalConclusions} onChange={(e) => updateField('finalConclusions', e.target.value)} />
+                    </div>
+                </div>
+             </div>
+          </div>
+      )}
+
+      {activeTab === 'Defense' && (
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-in fade-in space-y-6">
+             <h3 className="text-lg font-bold text-slate-800">Recursos Digitales para la Defensa</h3>
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Enlace a Presentación (Genially, Canva, PowerPoint)</label>
+                <input className="w-full p-3 border rounded-lg bg-slate-50" placeholder="https://..." value={state.presentationUrl} onChange={(e) => updateField('presentationUrl', e.target.value)} />
+             </div>
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Enlace a Carta Virtual (QR)</label>
+                <input className="w-full p-3 border rounded-lg bg-slate-50" placeholder="https://..." value={state.virtualMenuUrl} onChange={(e) => updateField('virtualMenuUrl', e.target.value)} />
+             </div>
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Evidencia de Carta Física (Foto/Drive)</label>
+                <input className="w-full p-3 border rounded-lg bg-slate-50" placeholder="https://..." value={state.physicalMenuEvidence} onChange={(e) => updateField('physicalMenuEvidence', e.target.value)} />
+             </div>
+          </div>
+      )}
+
+      {activeTab === 'CoEval' && (
+         <div className="space-y-6 animate-in fade-in">
+            <div className="bg-red-50 border border-red-200 p-6 rounded-xl text-red-900">
+               <h3 className="text-lg font-bold flex items-center gap-2 mb-2"><ShieldAlert className="w-5 h-5"/> La Coevaluación Diabólica</h3>
+               <p className="text-sm mb-4">
+                  Evalúa la contribución REAL de tus compañeros. Tienes un presupuesto de puntos positivos y negativos.
+                  <br/>Esta información es <strong>confidencial</strong> y será revisada por el profesor para modular la nota individual.
+               </p>
+               
+               <button 
+                 onClick={addCoEval}
+                 className="bg-red-700 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2"
+               >
+                  <UserPlus className="w-4 h-4" /> Añadir Evaluación a Compañero
+               </button>
             </div>
 
-            {/* 2. Resumen */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-               <h3 className="font-bold text-slate-800 mb-2">2. Resumen del Proyecto</h3>
-               <textarea className="w-full p-3 border rounded-lg h-24 text-sm" placeholder="Breve resumen ejecutivo del proyecto..." value={state.abstract} onChange={(e) => updateField('abstract', e.target.value)} />
-            </div>
-
-            {/* 3. Intro Additions */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="col-span-2 font-bold text-slate-800 border-b pb-2">3. Introducción (Complementos)</div>
-               <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">3.2 Objetivos del Proyecto</label>
-                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Objetivos principales..." value={state.projectObjectives} onChange={(e) => updateField('projectObjectives', e.target.value)} />
-               </div>
-               <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">3.3 Alcance y Limitaciones</label>
-                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="¿Hasta dónde llega el proyecto?" value={state.projectScope} onChange={(e) => updateField('projectScope', e.target.value)} />
-               </div>
-            </div>
-
-             {/* 4. Riesgos */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-               <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-orange-500"/> 4.4 Riesgos Laborales</h3>
-               <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Identificación de riesgos asociados a la empresa..." value={state.occupationalRisks} onChange={(e) => updateField('occupationalRisks', e.target.value)} />
-            </div>
-
-             {/* 5. & 6. Methodology & Analysis */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div>
-                  <label className="block text-sm font-bold text-slate-800 mb-1">5.1 Metodología de Trabajo</label>
-                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.methodology} onChange={(e) => updateField('methodology', e.target.value)} />
-               </div>
-               <div>
-                  <label className="block text-sm font-bold text-slate-800 mb-1">6.1 Análisis de Resultados</label>
-                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm" placeholder="Análisis del impacto y resultados obtenidos..." value={state.resultsAnalysis} onChange={(e) => updateField('resultsAnalysis', e.target.value)} />
-               </div>
-            </div>
-
-            {/* 7. Conclusions */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-               <h3 className="font-bold text-slate-800 mb-2">7. Conclusiones y Recomendaciones</h3>
-               <textarea className="w-full p-3 border rounded-lg h-40 text-sm" placeholder="Conclusiones finales y recomendaciones futuras..." value={state.finalConclusions} onChange={(e) => updateField('finalConclusions', e.target.value)} />
+            <div className="grid grid-cols-1 gap-4">
+               {state.coEvaluations.filter(c => !currentUser || c.reviewer === currentUser).map((ev, idx) => (
+                  <div key={ev.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative">
+                     <button onClick={() => removeCoEval(ev.id)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div className="md:col-span-4">
+                           <label className="text-xs font-bold text-slate-500 uppercase">Evaluado (Compañero)</label>
+                           <select 
+                              className="w-full p-2 border rounded bg-slate-50 font-bold" 
+                              value={ev.target} 
+                              onChange={(e) => updateCoEval(ev.id, 'target', e.target.value)}
+                           >
+                              <option value="">-- Seleccionar --</option>
+                              {config?.members.filter((m: any) => m.name !== currentUser).map((m: any) => (
+                                 <option key={m.name} value={m.name}>{m.name}</option>
+                              ))}
+                           </select>
+                        </div>
+                        <div className="md:col-span-2">
+                           <label className="text-xs font-bold text-slate-500 uppercase">Impacto</label>
+                           <select 
+                              className="w-full p-2 border rounded font-bold" 
+                              value={ev.score} 
+                              onChange={(e) => updateCoEval(ev.id, 'score', parseFloat(e.target.value))}
+                           >
+                              <option value="0">Neutro (0)</option>
+                              <option value="0.5">Positivo (+0.5)</option>
+                              <option value="1">Muy Positivo (+1)</option>
+                              <option value="-0.5">Negativo (-0.5)</option>
+                              <option value="-1">Muy Negativo (-1)</option>
+                           </select>
+                        </div>
+                        <div className="md:col-span-6">
+                           <label className="text-xs font-bold text-slate-500 uppercase">Justificación (Obligatoria)</label>
+                           <input 
+                              className="w-full p-2 border rounded" 
+                              placeholder="¿Por qué merece esa puntuación?"
+                              value={ev.justification} 
+                              onChange={(e) => updateCoEval(ev.id, 'justification', e.target.value)}
+                           />
+                        </div>
+                     </div>
+                  </div>
+               ))}
+               {state.coEvaluations.length === 0 && <p className="text-center text-slate-400 italic">No has evaluado a nadie todavía.</p>}
             </div>
          </div>
-      )}
-
-      {activeTab === 'Links' && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
-           <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Presentation className="w-5 h-5"/> Entregables Digitales</h3>
-           <div className="space-y-4">
-              <div>
-                 <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Laptop className="w-4 h-4"/> Enlace a la Presentación (Genially/Canva/PPT)</label>
-                 <input className="w-full p-3 border rounded bg-slate-50" placeholder="https://..." value={state.presentationUrl} onChange={(e) => updateField('presentationUrl', e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div>
-                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Smartphone className="w-4 h-4"/> Enlace Carta Digital</label>
-                    <input className="w-full p-3 border rounded bg-slate-50" placeholder="https://..." value={state.virtualMenuUrl} onChange={(e) => updateField('virtualMenuUrl', e.target.value)} />
-                 </div>
-                 <div>
-                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2"><Image className="w-4 h-4"/> Evidencia Carta Física</label>
-                    <input className="w-full p-3 border rounded bg-slate-50" placeholder="Descripción o URL..." value={state.physicalMenuEvidence} onChange={(e) => updateField('physicalMenuEvidence', e.target.value)} />
-                 </div>
-              </div>
-           </div>
-        </div>
-      )}
-      
-      {activeTab === 'CoEval' && (
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in border-t-4 border-t-red-500">
-           <div className="flex items-center gap-4 mb-6 border-b pb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600"><Flame className="w-6 h-6"/></div>
-              <div>
-                 <h3 className="text-xl font-bold text-slate-800">Coevaluación Diabólica</h3>
-                 <p className="text-red-600 font-bold text-sm mt-1">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</p>
-                 <p className="text-slate-600 text-xs mt-1 italic">
-                    "Este punto lo dan los propios compañeros, valorando su participación real. Sirve para ajustar la nota en función del esfuerzo individual."
-                 </p>
-              </div>
-           </div>
-
-           {!currentUser ? (
-              <div className="bg-orange-50 p-4 rounded text-orange-800 flex items-center gap-2 border border-orange-200">
-                 <AlertCircle className="w-5 h-5"/>
-                 <span className="font-bold">ATENCIÓN:</span> Debes seleccionar tu usuario en la barra lateral izquierda para poder evaluar.
-              </div>
-           ) : (
-              <div className="space-y-8">
-                 {/* Form */}
-                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                       <UserPlus className="w-4 h-4 text-indigo-600"/> Nueva Valoración (Tú eres: {currentUser})
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                       <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Evaluar a:</label>
-                          <select 
-                             className="w-full p-2 border rounded"
-                             value={newEval.target}
-                             onChange={(e) => setNewEval({...newEval, target: e.target.value})}
-                          >
-                             <option value="">-- Seleccionar Compañero --</option>
-                             {config?.members && config.members.length > 0 ? (
-                                config.members.map((m: any) => (
-                                <option 
-                                  key={m.name} 
-                                  value={m.name} 
-                                  disabled={m.name === currentUser}
-                                  className={m.name === currentUser ? 'text-slate-400 italic' : ''}
-                                >
-                                  {m.name} ({m.role}) {m.name === currentUser ? '(Tú - No te puedes autoevaluar)' : ''}
-                                </option>
-                             ))
-                             ) : (
-                                <option disabled>No hay miembros configurados</option>
-                             )}
-                          </select>
-                       </div>
-                       <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Puntuación: <span className={`${newEval.score > 0 ? 'text-emerald-600' : newEval.score < 0 ? 'text-red-600' : 'text-slate-600'} text-base`}>{newEval.score > 0 ? '+' : ''}{newEval.score.toFixed(1)}</span></label>
-                          <div className="flex items-center gap-3 mt-2">
-                              <span className="text-xs font-bold text-red-500">-1.0</span>
-                              <input 
-                                type="range" 
-                                min="-1" 
-                                max="1" 
-                                step="0.1"
-                                list="tickmarks"
-                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                value={newEval.score}
-                                onChange={(e) => setNewEval({...newEval, score: parseFloat(e.target.value)})}
-                              />
-                              <datalist id="tickmarks">
-                                <option value="-1"></option>
-                                <option value="-0.5"></option>
-                                <option value="0"></option>
-                                <option value="0.5"></option>
-                                <option value="1"></option>
-                              </datalist>
-                              <span className="text-xs font-bold text-emerald-500">+1.0</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 text-center mt-1">Desliza para ajustar decimales (Ej: +0.2, -0.7)</div>
-                       </div>
-                    </div>
-                    <div className="mb-4">
-                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Justificación (Obligatoria):</label>
-                       <textarea 
-                          className="w-full p-3 border rounded h-24 text-sm"
-                          placeholder="Explica por qué merece este punto (positivo o negativo)..."
-                          value={newEval.justification}
-                          onChange={(e) => setNewEval({...newEval, justification: e.target.value})}
-                       />
-                    </div>
-                    <button onClick={handleAddCoEval} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-indigo-500">Enviar Valoración</button>
-                 </div>
-
-                 {/* List */}
-                 <div>
-                    <h4 className="font-bold text-slate-800 mb-4">Tus Valoraciones Enviadas</h4>
-                    <div className="space-y-3">
-                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).length === 0 && <p className="text-slate-400 italic text-sm">No has enviado ninguna valoración.</p>}
-                       {(state.coEvaluations || []).filter(c => c.reviewer === currentUser).map(ev => {
-                          // Handle potential legacy strings just in case
-                          const scoreVal = typeof ev.score === 'number' ? ev.score : (ev.score === 'POSITIVE' ? 1 : ev.score === 'NEGATIVE' ? -1 : 0);
-                          return (
-                          <div key={ev.id} className="border border-slate-200 rounded p-4 bg-white flex justify-between items-start">
-                             <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                   <span className="font-bold text-slate-700">Para: {ev.target}</span>
-                                   <span className={`text-[10px] px-2 py-0.5 rounded font-bold text-white ${scoreVal > 0 ? 'bg-emerald-500' : scoreVal < 0 ? 'bg-red-500' : 'bg-slate-400'}`}>
-                                      {scoreVal > 0 ? '+' : ''}{scoreVal.toFixed(1)} PUNTOS
-                                   </span>
-                                </div>
-                                <p className="text-sm text-slate-600 italic">"{ev.justification}"</p>
-                             </div>
-                             <button onClick={() => handleDeleteCoEval(ev.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button>
-                          </div>
-                       )})}
-                    </div>
-                    
-                    {/* Read Only View of others - Locked per requirements */}
-                    <div className="mt-8 p-4 bg-slate-100 border border-slate-200 rounded text-xs text-slate-500 text-center flex items-center justify-center gap-2">
-                       <Lock className="w-4 h-4 text-slate-400"/>
-                       <span>Nota: Las valoraciones de otros compañeros están ocultas para evitar conflictos. Se incluirán automáticamente en el Anexo Confidencial de la Memoria Final (PDF) sin posibilidad de edición.</span>
-                    </div>
-                 </div>
-              </div>
-           )}
-        </div>
       )}
     </div>
   );
