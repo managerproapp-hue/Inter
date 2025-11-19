@@ -116,7 +116,38 @@ export interface Phase3Data {
   references: string[];
 }
 
-// --- Phase 4 Structures (Costes y Ejecución) ---
+// --- Phase 4 Structures (NEW: Memoria Parcial y Consolidación) ---
+
+export interface PlanningActivity {
+  id: string;
+  activity: string;
+  dates: string;
+  resources: string;
+}
+
+export interface Phase4Data {
+  // 1. Introduction & Justification
+  introContext: string; 
+  introObjectives: string;
+
+  // 2. Sector Analysis (RA1)
+  sectorCharacterization: string;
+  strategyDemand: string;
+  odsJustification: string;
+
+  // 3. Project Design (RA2)
+  problemDetected: string;
+  technicalViability: string;
+  essentialParts: string;
+  requiredResources: string; // Human & Material
+  qualityAspects: string;
+
+  // 4. Planning (RA3)
+  timeline: PlanningActivity[];
+  logistics: string;
+}
+
+// --- Phase 5 Structures (Old Phase 4: Costes y Ejecución) ---
 
 export interface IngredientCost {
   name: string;
@@ -139,13 +170,13 @@ export interface DishEval {
   waste: string;
 }
 
-export interface Phase4Data {
+export interface Phase5Data {
   financials: DishFinancial[]; // Escandallos (Costes)
   dishes: DishEval[]; // Autoevaluación sensorial
   brigadeReport: string;
 }
 
-// --- Phase 5 Structures (Defensa y Memoria Oficial) ---
+// --- Phase 6 Structures (Old Phase 5: Defensa y Memoria Oficial) ---
 
 export interface CoEvaluationEntry {
   id: string;
@@ -156,7 +187,7 @@ export interface CoEvaluationEntry {
   timestamp: string;
 }
 
-export interface Phase5Data {
+export interface Phase6Data {
   // Part A: Individual Checklist
   individualChecklist: {
     investigationDone: boolean;
@@ -165,19 +196,12 @@ export interface Phase5Data {
     defensePrepared: boolean;
   };
 
-  // Part B: Memory Assembler (Official Index Fields)
-  // Section 2
+  // Part B: Memory Assembler (Official Index Fields that weren't covered in Phase 4)
   abstract: string; // Resumen del proyecto
-  // Section 3
-  projectObjectives: string; // 3.2 Objetivos
   projectScope: string; // 3.3 Alcance y limitaciones
-  // Section 4
   occupationalRisks: string; // 4.4 Riesgos laborales
-  // Section 5
   methodology: string; // 5.1 Metodología
-  // Section 6
   resultsAnalysis: string; // 6.1 Análisis de resultados
-  // Section 7
   finalConclusions: string; // 7.1 Conclusiones y recomendaciones
 
   // Defense Links
@@ -190,7 +214,7 @@ export interface Phase5Data {
 }
 
 // Union type for content allows different structures per phase
-export type PhaseContent = string | Phase2Data | Phase3Data | Phase4Data | Phase5Data;
+export type PhaseContent = string | Phase2Data | Phase3Data | Phase4Data | Phase5Data | Phase6Data;
 
 export interface ProjectConfig {
   projectName: string;
@@ -212,8 +236,9 @@ export interface ProjectState {
     phase1: string; // Text with Config display
     phase2: Phase2Data; // Structured Tarea 2
     phase3: Phase3Data; // Structured Tarea 3
-    phase4: Phase4Data; // Structured Tarea 4
-    phase5: Phase5Data; // Structured Tarea 5
+    phase4: Phase4Data; // NEW: Structured Tarea 4 (Memoria Parcial)
+    phase5: Phase5Data; // Old Phase 4
+    phase6: Phase6Data; // Old Phase 5
   };
   lastModifiedBy: string;
   lastModifiedDate: string;

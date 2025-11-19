@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, PhaseContent } from './types';
-import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, ROLE_DEFINITIONS, ODS_LIST } from './constants';
+import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, PhaseContent } from './types';
+import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6, ROLE_DEFINITIONS, ODS_LIST } from './constants';
 import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History } from 'lucide-react';
-import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor } from './components/PhaseEditors';
+import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor, Phase6Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
 
@@ -20,7 +20,7 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-900/50 border border-indigo-700 text-indigo-300 text-xs font-bold tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4">
-             <Sparkles className="w-3 h-3" /> <span>NUEVA VERSIÓN: INSPECTOR DE IMPORTACIÓN</span>
+             <Sparkles className="w-3 h-3" /> <span>NUEVA VERSIÓN: FASE 4 INTERMEDIA (MEMORIA PARCIAL)</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
@@ -92,9 +92,9 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
                    <LayoutDashboard className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-emerald-200">2. Especialistas</h3>
-                <p className="text-sm text-slate-400 mb-4">Cada alumno importa la config y trabaja en su fase asignada.</p>
+                <p className="text-sm text-slate-400 mb-4">Cada alumno trabaja en su fase y exporta su parte.</p>
                 <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs font-mono text-emerald-400 flex items-center gap-2">
-                   <Upload className="w-3 h-3" /> aporte_mi_parte.json
+                   <Upload className="w-3 h-3" /> aporte_faseX.json
                 </div>
              </div>
 
@@ -338,14 +338,19 @@ const getContentStats = (json: any): string[] => {
     if (p3.visual?.qrUrl) stats.push(`📱 Diseño Visual`);
   } else if (pid === 'phase4') {
     const p4 = c as Phase4Data;
-    if (p4.financials?.length) stats.push(`💰 ${p4.financials.length} Escandallos`);
-    if (p4.dishes?.length) stats.push(`👅 ${p4.dishes.length} Catas`);
-    if (p4.brigadeReport) stats.push(`📝 Informe Brigada`);
+    if (p4.introContext) stats.push(`📄 Intro/Justificación`);
+    if (p4.sectorCharacterization) stats.push(`🏭 Análisis Sector`);
+    if (p4.timeline?.length) stats.push(`📅 ${p4.timeline.length} Actividades Planificadas`);
   } else if (pid === 'phase5') {
     const p5 = c as Phase5Data;
-    if (p5.individualChecklist) stats.push(`✅ Checklist Individual`);
-    if (p5.coEvaluations?.length) stats.push(`⚖️ ${p5.coEvaluations.length} Coevaluaciones`);
-    if (p5.finalConclusions) stats.push(`📜 Conclusiones`);
+    if (p5.financials?.length) stats.push(`💰 ${p5.financials.length} Escandallos`);
+    if (p5.dishes?.length) stats.push(`👅 ${p5.dishes.length} Catas`);
+    if (p5.brigadeReport) stats.push(`📝 Informe Brigada`);
+  } else if (pid === 'phase6') {
+    const p6 = c as Phase6Data;
+    if (p6.individualChecklist) stats.push(`✅ Checklist Individual`);
+    if (p6.coEvaluations?.length) stats.push(`⚖️ ${p6.coEvaluations.length} Coevaluaciones`);
+    if (p6.finalConclusions) stats.push(`📜 Conclusiones`);
   } else {
     stats.push("📄 Contenido de texto/genérico");
   }
@@ -446,7 +451,7 @@ export default function App() {
   const [mode, setMode] = useState<AppMode>(AppMode.LANDING);
   const [projectState, setProjectState] = useState<ProjectState>({
     config: null,
-    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5 },
+    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5, phase6: INITIAL_PHASE_6 },
     lastModifiedBy: 'Sistema',
     lastModifiedDate: new Date().toISOString()
   });
@@ -502,8 +507,10 @@ export default function App() {
       
       if (savedData) {
         const parsed = JSON.parse(savedData);
-        // Ensure new phases exist if old save
+        // Ensure new phases exist if old save (Migration logic)
+        if(!parsed.phases.phase4) parsed.phases.phase4 = INITIAL_PHASE_4;
         if(!parsed.phases.phase5) parsed.phases.phase5 = INITIAL_PHASE_5;
+        if(!parsed.phases.phase6) parsed.phases.phase6 = INITIAL_PHASE_6;
         
         setProjectState(parsed);
         if (savedUser) setCurrentUser(savedUser);
@@ -524,7 +531,7 @@ export default function App() {
     setHasSavedSession(false);
     setProjectState({
       config: null,
-      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5 },
+      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: INITIAL_PHASE_5, phase6: INITIAL_PHASE_6 },
       lastModifiedBy: 'Sistema',
       lastModifiedDate: new Date().toISOString()
     });
@@ -558,7 +565,8 @@ export default function App() {
       try {
         const json = JSON.parse(e.target?.result as string);
         if (json.config && json.phases) {
-             if(!json.phases.phase5) json.phases.phase5 = INITIAL_PHASE_5; // Migration
+             // Migration for full import
+             if(!json.phases.phase6) json.phases.phase6 = INITIAL_PHASE_6; 
              setProjectState(json); // Full restore
         } else if (json.teamName) {
              setProjectState(prev => ({ ...prev, config: json })); // Config only
@@ -597,9 +605,13 @@ export default function App() {
     if (!importCandidate) return;
     
     if (isFullBackup) {
-       // Restore full backup
-       if(!importCandidate.phases.phase5) importCandidate.phases.phase5 = INITIAL_PHASE_5;
-       setProjectState(importCandidate);
+       // Restore full backup (with migration safety)
+       const restored = importCandidate;
+       if(!restored.phases.phase4) restored.phases.phase4 = INITIAL_PHASE_4;
+       if(!restored.phases.phase5) restored.phases.phase5 = INITIAL_PHASE_5;
+       if(!restored.phases.phase6) restored.phases.phase6 = INITIAL_PHASE_6;
+       
+       setProjectState(restored);
        alert("✅ Proyecto restaurado con éxito.");
     } else {
        // Merge logic
@@ -649,7 +661,6 @@ export default function App() {
         } else if (contrib.phaseId === 'phase3') {
             const currentP3 = newPhases.phase3 as Phase3Data;
             const incomingP3 = contrib.content as Phase3Data;
-            // Merge logic same as before...
             const mergedProductList = currentP3.products.list + (incomingP3.products.list ? `\n\n[${authorName}]: ${incomingP3.products.list}` : '');
             const mergedDishes = [...currentP3.menu, ...incomingP3.menu.map(d => ({...d, author: authorName}))];
             const mergedRefs = [...new Set([...currentP3.references, ...incomingP3.references])];
@@ -660,16 +671,51 @@ export default function App() {
               menu: mergedDishes,
               references: mergedRefs
             };
+            
+        } else if (contrib.phaseId === 'phase4') {
+            // New Phase 4 Merge Strategy: Append text contributions
+            const currentP4 = newPhases.phase4 as Phase4Data;
+            const incomingP4 = contrib.content as Phase4Data;
+
+            const append = (oldT: string, newT: string) => newT ? (oldT ? `${oldT}\n\n--- ${authorName}: ---\n${newT}` : newT) : oldT;
+            
+            newPhases.phase4 = {
+                introContext: append(currentP4.introContext, incomingP4.introContext),
+                introObjectives: append(currentP4.introObjectives, incomingP4.introObjectives),
+                sectorCharacterization: append(currentP4.sectorCharacterization, incomingP4.sectorCharacterization),
+                strategyDemand: append(currentP4.strategyDemand, incomingP4.strategyDemand),
+                odsJustification: append(currentP4.odsJustification, incomingP4.odsJustification),
+                problemDetected: append(currentP4.problemDetected, incomingP4.problemDetected),
+                technicalViability: append(currentP4.technicalViability, incomingP4.technicalViability),
+                essentialParts: append(currentP4.essentialParts, incomingP4.essentialParts),
+                requiredResources: append(currentP4.requiredResources, incomingP4.requiredResources),
+                qualityAspects: append(currentP4.qualityAspects, incomingP4.qualityAspects),
+                timeline: [...currentP4.timeline, ...(incomingP4.timeline || [])],
+                logistics: append(currentP4.logistics, incomingP4.logistics)
+            };
 
         } else if (contrib.phaseId === 'phase5') {
+            // Old Phase 4 -> Phase 5 (Financials)
             const currentP5 = newPhases.phase5 as Phase5Data;
             const incomingP5 = contrib.content as Phase5Data;
-            const mergedCoEval = [...(currentP5.coEvaluations || []), ...(incomingP5.coEvaluations || []).map(c => ({...c, reviewer: authorName}))];
+            const mergedFinancials = [...currentP5.financials, ...(incomingP5.financials || [])];
+            const mergedDishes = [...currentP5.dishes, ...(incomingP5.dishes || [])];
             newPhases.phase5 = {
-              ...currentP5,
-              ...incomingP5,
+              financials: mergedFinancials,
+              dishes: mergedDishes,
+              brigadeReport: currentP5.brigadeReport || incomingP5.brigadeReport // Simple overwrite for report for now
+            };
+
+        } else if (contrib.phaseId === 'phase6') {
+            // Old Phase 5 -> Phase 6 (Memory)
+            const currentP6 = newPhases.phase6 as Phase6Data;
+            const incomingP6 = contrib.content as Phase6Data;
+            const mergedCoEval = [...(currentP6.coEvaluations || []), ...(incomingP6.coEvaluations || []).map(c => ({...c, reviewer: authorName}))];
+            newPhases.phase6 = {
+              ...currentP6,
+              ...incomingP6,
               coEvaluations: mergedCoEval,
-              abstract: incomingP5.abstract || currentP5.abstract
+              abstract: incomingP6.abstract || currentP6.abstract
             }
         } else {
             (newPhases as any)[contrib.phaseId] = contrib.content;
@@ -850,10 +896,12 @@ export default function App() {
               ) : activePhaseId === 'phase3' ? (
                 <Phase3Editor data={projectState.phases.phase3} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase4' ? (
-                <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" phase3Data={projectState.phases.phase3} />
+                <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" />
               ) : activePhaseId === 'phase5' ? (
-                <Phase5Editor 
-                  data={projectState.phases.phase5} 
+                <Phase5Editor data={projectState.phases.phase5} onUpdate={handlePhaseUpdate} projectContext="" phase3Data={projectState.phases.phase3} />
+              ) : activePhaseId === 'phase6' ? (
+                <Phase6Editor 
+                  data={projectState.phases.phase6} 
                   onUpdate={handlePhaseUpdate} 
                   projectContext="" 
                   currentUser={currentUser} 
@@ -913,10 +961,6 @@ export default function App() {
                    </div>
                 </div>
               ))}
-              <div className="text-center text-xs text-slate-400 pt-8 pb-4">
-                Fuente: BOLETÍN OFICIAL DEL ESTADO. Núm. 129, Martes 28 de mayo de 2024, Sec. I. Pág. 61079. cve: BOE-A-2024-10684.
-                <br/><a href="https://www.boe.es" target="_blank" className="underline hover:text-slate-600">Verificable en https://www.boe.es</a>
-              </div>
             </div>
           )}
           {view === 'print' && (
@@ -962,7 +1006,7 @@ export default function App() {
                {/* 2. RESUMEN */}
                <section className="mb-8">
                   <h3 className="text-lg font-bold uppercase mb-2">2. Resumen</h3>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.abstract || "[Pendiente de redacción en Fase 5]"}</p>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.abstract || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 3. INTRODUCCIÓN */}
@@ -970,9 +1014,13 @@ export default function App() {
                   <h3 className="text-lg font-bold uppercase mb-2">3. Introducción</h3>
                   <h4 className="font-bold mb-1">3.1. Contexto y justificación del proyecto</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.introContext}</p>
+
+                  <h4 className="font-bold mb-1">3.2. Objetivos</h4>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.introObjectives}</p>
                   
                   <h4 className="font-bold mb-1">3.3. Alcance y limitaciones</h4>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.projectScope || "[Pendiente de redacción en Fase 5]"}</p>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.projectScope || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 4. ANÁLISIS DE EMPRESAS */}
@@ -980,6 +1028,9 @@ export default function App() {
                    <h3 className="text-lg font-bold uppercase mb-2">4. Análisis y contextualización de empresas del sector</h3>
                    
                    <h4 className="font-bold mb-1">4.1. Caracterización de empresas del sector</h4>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.sectorCharacterization}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.strategyDemand}</p>
+
                    <div className="pl-4 mb-4">
                       <p className="font-bold italic mb-1">4.1.1 Identificación de la empresa (Concepto Propio)</p>
                       <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2.concept.name}</p>
@@ -991,9 +1042,6 @@ export default function App() {
                       <ul className="list-disc list-inside pl-4 mb-2">
                          {projectState.phases.phase2.trends.map(t => <li key={t.id}>{t.description}</li>)}
                       </ul>
-
-                      <p className="font-bold italic mb-1 mt-4">4.1.3 Justificación</p>
-                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase2.synthesis}</p>
                    </div>
 
                    <h4 className="font-bold mb-1">4.2. Productos y servicios</h4>
@@ -1006,39 +1054,42 @@ export default function App() {
                    <div className="pl-4 mb-4">
                       <p className="mb-2"><strong>ODS del Negocio:</strong> {projectState.phases.phase2.concept.linkedODS.join(', ')}</p>
                       <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3.products.sustainability}</p>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase4.odsJustification}</p>
                    </div>
 
                    <h4 className="font-bold mb-1">4.4. Identificación de riesgos laborales</h4>
-                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase5.occupationalRisks || "[Pendiente de redacción en Fase 5]"}</p>
-
-                   <h4 className="font-bold mb-1">4.5. Conclusiones del análisis</h4>
-                   <p className="text-justify whitespace-pre-wrap pl-4">El análisis de la zona {projectState.config?.zone} confirma la viabilidad del concepto {projectState.phases.phase2.concept.name}.</p>
+                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase6.occupationalRisks || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 5. DESARROLLO */}
                <section className="mb-8 break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">5. Desarrollo del Proyecto</h3>
                    <h4 className="font-bold mb-1">5.1. Metodología de trabajo</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.methodology}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6.methodology}</p>
 
-                   <h4 className="font-bold mb-1">5.2. Temporalización y Actividades</h4>
+                   <h4 className="font-bold mb-1">5.2. Planificación y Cronograma</h4>
                    <div className="pl-4 mb-4">
-                      <table className="w-full text-sm border-collapse border border-slate-300">
-                         <thead><tr className="bg-slate-100"><th className="border p-1">Semana</th><th className="border p-1">Avances</th></tr></thead>
-                         <tbody>
-                            {projectState.phases.phase2.weeklyReports.map(w => (
-                               <tr key={w.id}><td className="border p-1 font-bold">{w.week}</td><td className="border p-1">{w.advances}</td></tr>
-                            ))}
-                         </tbody>
-                      </table>
+                       <ul className="list-none space-y-2">
+                          {projectState.phases.phase4.timeline.map(act => (
+                             <li key={act.id} className="border-l-4 border-slate-300 pl-2">
+                                <span className="font-bold block">{act.activity}</span>
+                                <span className="text-sm text-slate-600">{act.dates} - {act.resources}</span>
+                             </li>
+                          ))}
+                       </ul>
                    </div>
+                   <p className="text-justify whitespace-pre-wrap mb-4"><strong>Logística:</strong> {projectState.phases.phase4.logistics}</p>
+
+                   <h4 className="font-bold mb-1">5.3. Viabilidad y Recursos</h4>
+                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4.technicalViability}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4.requiredResources}</p>
                </section>
 
                {/* 6. RESULTADOS */}
                <section className="mb-8 break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">6. Resultados y análisis</h3>
                    <h4 className="font-bold mb-1">6.1. Análisis de los resultados obtenidos</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase5.resultsAnalysis || "[Pendiente de redacción en Fase 5]"}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6.resultsAnalysis || "[Pendiente de redacción en Fase 6]"}</p>
                    
                    <h4 className="font-bold mb-2">Resumen de Costes (Escandallos)</h4>
                    <table className="w-full text-sm mb-4 border-collapse border border-slate-300">
@@ -1046,7 +1097,7 @@ export default function App() {
                        <tr className="bg-slate-100"><th className="border p-1 text-left">Plato</th><th className="border p-1 text-right">Coste</th><th className="border p-1 text-right">PVR</th><th className="border p-1 text-right">Margen</th></tr>
                      </thead>
                      <tbody>
-                       {projectState.phases.phase4.financials.map((f, i) => {
+                       {projectState.phases.phase5.financials.map((f, i) => {
                           const dishName = projectState.phases.phase3.menu.find(m => m.id === f.dishId)?.name || 'Plato desconocido';
                           const margin = f.sellingPrice > 0 ? ((f.sellingPrice - f.totalCost) / f.sellingPrice * 100).toFixed(1) : '0';
                           return (
@@ -1065,7 +1116,7 @@ export default function App() {
                {/* 7. CONCLUSIONES */}
                <section className="mb-8">
                    <h3 className="text-lg font-bold uppercase mb-2">7. Conclusiones y recomendaciones</h3>
-                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase5.finalConclusions || "[Pendiente de redacción en Fase 5]"}</p>
+                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.finalConclusions || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 8. BIBLIOGRAFÍA */}
@@ -1094,7 +1145,7 @@ export default function App() {
                </section>
 
                {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
-               {(projectState.phases.phase5.coEvaluations || []).length > 0 && (
+               {(projectState.phases.phase6.coEvaluations || []).length > 0 && (
                  <section className="break-before-page">
                      <div className="bg-slate-100 border-2 border-slate-300 p-6 rounded-xl">
                         <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
@@ -1115,7 +1166,7 @@ export default function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {projectState.phases.phase5.coEvaluations.map((ev) => {
+                              {projectState.phases.phase6.coEvaluations.map((ev) => {
                                 const scoreVal = typeof ev.score === 'number' ? ev.score : (ev.score === 'POSITIVE' ? 1 : ev.score === 'NEGATIVE' ? -1 : 0);
                                 return (
                                   <tr key={ev.id}>
