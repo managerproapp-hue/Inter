@@ -801,10 +801,13 @@ export default function App() {
                {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
                {(projectState.phases.phase5.coEvaluations || []).length > 0 && (
                  <section className="break-before-page">
-                     <h3 className="text-lg font-bold uppercase mb-4 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
-                     <p className="text-sm italic mb-4 text-slate-600">
-                       Documento reservado para el docente. Contiene las valoraciones individuales de los miembros del equipo para el ajuste de la nota (+1 / -1 punto).
-                     </p>
+                     <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
+                     <div className="mb-4 border-l-4 border-red-500 pl-3">
+                        <h4 className="font-bold">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</h4>
+                        <p className="text-sm italic text-slate-600">
+                          Documento reservado para el docente. Contiene las valoraciones para el ajuste de nota según implicación.
+                        </p>
+                     </div>
                      <table className="w-full text-sm border-collapse border border-slate-400">
                         <thead>
                            <tr className="bg-slate-200">

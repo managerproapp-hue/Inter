@@ -1149,8 +1149,9 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
            <div className="flex items-center gap-4 mb-6 border-b pb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600"><Flame className="w-6 h-6"/></div>
               <div>
-                 <h3 className="text-xl font-bold text-slate-800">Coevaluación Diabólica (+/- 1 Punto)</h3>
-                 <p className="text-slate-500 text-sm">Valora la implicación real de tus compañeros. El profesor decidirá si aplica el punto.</p>
+                 <h3 className="text-xl font-bold text-slate-800">Coevaluación Diabólica</h3>
+                 <p className="text-red-600 font-bold text-sm mt-1">Rúbrica: Contribución individual al éxito del equipo (Máx. ±1 puntos)</p>
+                 <p className="text-slate-500 text-xs mt-1">Valora la implicación real de tus compañeros. El profesor decidirá si aplica el ajuste de nota.</p>
               </div>
            </div>
 
