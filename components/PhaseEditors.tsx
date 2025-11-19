@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Phase2Data, Phase4Data, TrendEntry, PublicAnalysisEntry, MenuBenchmarkEntry, SimpleGraphEntry, WeeklyReportEntry, DishEval } from '../types';
-import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_4 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users } from 'lucide-react';
+import { Phase2Data, Phase3Data, Phase4Data, DishCategory, MenuDish, DishEval } from '../types';
+import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4 } from '../constants';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -350,6 +350,216 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                     </div>
                  ))}
               </div>
+           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Structured Phase 3 Editor (Tarea 3) ---
+export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly }) => {
+  const state: Phase3Data = data || INITIAL_PHASE_3;
+  const [activeTab, setActiveTab] = useState<'Products' | 'Menu' | 'Visual'>('Products');
+
+  const updateField = (field: keyof Phase3Data, value: any) => {
+    onUpdate({ ...state, [field]: value });
+  };
+
+  // Helpers for Menu
+  const categories: DishCategory[] = ['Aperitivo', 'Entrante', 'Principal', 'Postre'];
+  
+  const addDish = (category: DishCategory) => {
+    const newDish: MenuDish = {
+      id: Date.now().toString(),
+      category,
+      name: '',
+      ingredients: '',
+      allergens: '',
+      techniques: '',
+      presentation: '',
+      ods: '',
+      author: '' // Will be filled implicitly if not set
+    };
+    updateField('menu', [...state.menu, newDish]);
+  };
+
+  const removeDish = (id: string) => {
+    updateField('menu', state.menu.filter(d => d.id !== id));
+  };
+
+  const updateDish = (id: string, field: keyof MenuDish, val: string) => {
+    const newMenu = state.menu.map(d => d.id === id ? { ...d, [field]: val } : d);
+    updateField('menu', newMenu);
+  };
+
+  const addReference = () => {
+    updateField('references', [...state.references, '']);
+  };
+
+  return (
+    <div className="space-y-6 pb-10">
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <button onClick={() => setActiveTab('Products')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Products' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>
+           1. Productos de Temporada
+        </button>
+        <button onClick={() => setActiveTab('Menu')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Menu' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>
+           2. Creación de Platos (20)
+        </button>
+        <button onClick={() => setActiveTab('Visual')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Visual' ? 'bg-emerald-600 text-white' : 'bg-white border hover:bg-slate-50'}`}>
+           3. Diseño Visual
+        </button>
+      </div>
+
+      {/* Tab 1: Products */}
+      {activeTab === 'Products' && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6 animate-in fade-in">
+           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Leaf className="w-5 h-5 text-emerald-600"/> Selección de Productos</h3>
+           
+           <div>
+             <label className="block text-sm font-bold text-slate-700 mb-1">Lista de productos (ej. "Alcachofas, Murcia, km0")</label>
+             <textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.list} onChange={(e) => updateField('products', {...state.products, list: e.target.value})} />
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-1">Sostenibilidad (ODS vinculados)</label>
+                 <textarea className="w-full p-3 border rounded-lg h-24 text-sm" placeholder="Ej: Reduce emisiones, ODS 12..." value={state.products.sustainability} onChange={(e) => updateField('products', {...state.products, sustainability: e.target.value})} />
+              </div>
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-1">Análisis de Impacto</label>
+                 <textarea className="w-full p-3 border rounded-lg h-24 text-sm" placeholder="Ej: Baja huella de carbono por transporte..." value={state.products.impactAnalysis} onChange={(e) => updateField('products', {...state.products, impactAnalysis: e.target.value})} />
+              </div>
+           </div>
+
+           <div>
+             <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-bold text-slate-700">Fuentes (Mínimo 3)</label>
+                <button onClick={() => updateField('products', {...state.products, sources: [...state.products.sources, '']})} className="text-xs text-indigo-600 font-bold">+ Añadir Fuente</button>
+             </div>
+             <div className="space-y-2">
+                {state.products.sources.map((s, i) => (
+                   <div key={i} className="flex gap-2">
+                      <span className="text-slate-400 text-sm pt-2">{i+1}.</span>
+                      <input className="flex-1 p-2 border rounded text-sm" value={s} onChange={(e) => {
+                         const n = [...state.products.sources]; n[i] = e.target.value;
+                         updateField('products', {...state.products, sources: n});
+                      }} />
+                   </div>
+                ))}
+                {state.products.sources.length === 0 && <p className="text-slate-400 text-xs italic">Añade fuentes bibliográficas.</p>}
+             </div>
+           </div>
+        </div>
+      )}
+
+      {/* Tab 2: Menu Construction */}
+      {activeTab === 'Menu' && (
+        <div className="space-y-8 animate-in fade-in">
+          <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm border border-blue-100 flex gap-3">
+             <Utensils className="w-5 h-5 flex-shrink-0"/>
+             <div>
+               <p className="font-bold">Instrucciones Grupales:</p>
+               <p>Cada miembro debe añadir sus propios platos. Al importar el archivo de un compañero, sus platos se fusionarán aquí. Objetivo total: 20 Platos.</p>
+             </div>
+          </div>
+
+          {categories.map(cat => {
+             const dishes = state.menu.filter(d => d.category === cat);
+             return (
+                <div key={cat} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                   <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        {cat}s <span className="bg-slate-100 text-slate-500 text-xs px-2 py-1 rounded-full">{dishes.length}/5</span>
+                      </h3>
+                      <button onClick={() => addDish(cat)} className="text-indigo-600 text-sm font-medium hover:bg-indigo-50 px-3 py-1 rounded transition-colors flex items-center gap-1">
+                         <Plus className="w-4 h-4"/> Añadir {cat}
+                      </button>
+                   </div>
+                   <div className="space-y-4">
+                      {dishes.map((dish) => (
+                         <div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative">
+                            <button onClick={() => removeDish(dish.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                            {dish.author && <span className="absolute top-3 right-10 bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1"><Users className="w-3 h-3"/> {dish.author}</span>}
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                               <div>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre del Plato</label>
+                                  <input className="w-full p-2 border rounded bg-white font-bold" value={dish.name} onChange={(e) => updateDish(dish.id, 'name', e.target.value)} placeholder="Nombre creativo..." />
+                               </div>
+                               <div>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">Ingredientes Clave</label>
+                                  <input className="w-full p-2 border rounded bg-white" value={dish.ingredients} onChange={(e) => updateDish(dish.id, 'ingredients', e.target.value)} placeholder="Lista breve..." />
+                               </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                               <div>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">Alérgenos</label>
+                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.allergens} onChange={(e) => updateDish(dish.id, 'allergens', e.target.value)} />
+                               </div>
+                               <div>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">Técnicas</label>
+                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.techniques} onChange={(e) => updateDish(dish.id, 'techniques', e.target.value)} />
+                               </div>
+                               <div>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">ODS (Justificación)</label>
+                                  <input className="w-full p-2 border rounded bg-white text-sm" value={dish.ods} onChange={(e) => updateDish(dish.id, 'ods', e.target.value)} />
+                               </div>
+                            </div>
+                            <div className="mt-2">
+                               <label className="text-xs font-bold text-slate-500 uppercase">Presentación</label>
+                               <input className="w-full p-2 border rounded bg-white text-sm" value={dish.presentation} onChange={(e) => updateDish(dish.id, 'presentation', e.target.value)} placeholder="Descripción visual..." />
+                            </div>
+                         </div>
+                      ))}
+                      {dishes.length === 0 && <p className="text-center text-sm text-slate-400 py-4 italic">No hay platos en esta categoría.</p>}
+                   </div>
+                </div>
+             );
+          })}
+        </div>
+      )}
+
+      {/* Tab 3: Visual Design */}
+      {activeTab === 'Visual' && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6 animate-in fade-in">
+           <h3 className="text-lg font-bold text-slate-800 mb-4">Diseño Visual de la Carta</h3>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                 <label className="font-bold text-slate-700 flex items-center gap-2"><Image className="w-4 h-4"/> Enlace Canva / Imagen</label>
+                 <input className="w-full p-3 border rounded-lg" placeholder="Pega el enlace a tu diseño de Canva..." value={state.visual.canvaDescription} onChange={(e) => updateField('visual', {...state.visual, canvaDescription: e.target.value})} />
+                 <p className="text-xs text-slate-500">Incluye una descripción breve si no tienes el enlace final.</p>
+              </div>
+              
+              <div className="space-y-2">
+                 <label className="font-bold text-slate-700 flex items-center gap-2"><Smartphone className="w-4 h-4"/> Código QR (Enlace)</label>
+                 <input className="w-full p-3 border rounded-lg" placeholder="URL a la carta digital..." value={state.visual.qrUrl} onChange={(e) => updateField('visual', {...state.visual, qrUrl: e.target.value})} />
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <label className="font-bold text-slate-700">Versión Física (Descripción)</label>
+              <textarea className="w-full p-3 border rounded-lg h-24" placeholder="Ej: Papel reciclado con textura, tintas ecológicas..." value={state.visual.physicalDescription} onChange={(e) => updateField('visual', {...state.visual, physicalDescription: e.target.value})} />
+           </div>
+
+           <div className="border-t pt-6 mt-6">
+               <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-bold text-slate-700">Referencias Bibliográficas (Min 5)</h4>
+                  <button onClick={addReference} className="text-xs text-indigo-600 font-bold">+ Añadir</button>
+               </div>
+               <div className="space-y-2">
+                  {state.references.map((r, i) => (
+                     <div key={i} className="flex gap-2">
+                        <span className="text-slate-400 text-sm pt-2">{i+1}.</span>
+                        <input className="flex-1 p-2 border rounded text-sm" value={r} onChange={(e) => {
+                           const n = [...state.references]; n[i] = e.target.value;
+                           updateField('references', n);
+                        }} />
+                     </div>
+                  ))}
+               </div>
            </div>
         </div>
       )}

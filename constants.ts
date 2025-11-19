@@ -1,5 +1,5 @@
 
-import { LearningOutcome, RoleType, Phase2Data, Phase4Data } from "./types";
+import { LearningOutcome, RoleType, Phase2Data, Phase3Data, Phase4Data } from "./types";
 
 export const ZONES = [
   "Altiplano (Jumilla, Yecla – vinos, productos de secano)",
@@ -48,6 +48,22 @@ export const INITIAL_PHASE_2: Phase2Data = {
   weeklyReports: []
 };
 
+export const INITIAL_PHASE_3: Phase3Data = {
+  products: {
+    list: '',
+    sustainability: '',
+    impactAnalysis: '',
+    sources: []
+  },
+  menu: [],
+  visual: {
+    canvaDescription: '',
+    qrUrl: '',
+    physicalDescription: ''
+  },
+  references: []
+};
+
 export const INITIAL_PHASE_4: Phase4Data = {
   dishes: [],
   brigadeReport: ''
@@ -71,7 +87,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
 export const PHASES = [
   { id: 'phase1', title: 'Fase 1: Definición y Contexto', type: 'text', icon: 'MapPin' },
   { id: 'phase2', title: 'Fase 2: Inmersión e Ideación (Tarea 2)', type: 'structured', icon: 'Search' },
-  { id: 'phase3', title: 'Fase 3: Diseño de Oferta', type: 'text', icon: 'Utensils' },
+  { id: 'phase3', title: 'Fase 3: Diseño de Oferta (Tarea 3)', type: 'structured', icon: 'Utensils' },
   { id: 'phase4', title: 'Fase 4: Ejecución Práctica', type: 'structured', icon: 'ChefHat' },
   { id: 'phase5', title: 'Fase 5: Conclusiones y Venta', type: 'text', icon: 'Target' },
 ];

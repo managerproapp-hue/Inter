@@ -54,7 +54,7 @@ export interface WeeklyReportEntry {
 
 export interface Phase2Data {
   // PART A: Individual Analysis (Tarea 2 Individual)
-  specificFocus: string; // Enfoque asignado (ej. aperitivos) - Local user state usually, but kept here for export
+  specificFocus: string; // Enfoque asignado (ej. aperitivos)
   trends: TrendEntry[];
   publicAnalysis: PublicAnalysisEntry[];
   menuBenchmarking: MenuBenchmarkEntry[]; // The 5 examples
@@ -70,6 +70,44 @@ export interface Phase2Data {
   zoneMapDescription: string; // Descripción del mapa de zona
   references: string[]; // Lista de referencias (mínimo 5)
   weeklyReports: WeeklyReportEntry[];
+}
+
+// --- Phase 3 Structures (Tarea 3) ---
+
+export type DishCategory = 'Aperitivo' | 'Entrante' | 'Principal' | 'Postre';
+
+export interface MenuDish {
+  id: string;
+  category: DishCategory;
+  name: string;
+  ingredients: string;
+  allergens: string;
+  techniques: string;
+  presentation: string;
+  ods: string;
+  author: string; // Vital for group work tracking
+}
+
+export interface Phase3Data {
+  // Part 1: Products
+  products: {
+    list: string; // "Alcachofas, Murcia, km0..."
+    sustainability: string; // "Reduce emisiones..."
+    impactAnalysis: string; // "Baja huella..."
+    sources: string[];
+  };
+  
+  // Part 2: The 20 Dishes
+  menu: MenuDish[];
+
+  // Part 3: Visual Design
+  visual: {
+    canvaDescription: string;
+    qrUrl: string;
+    physicalDescription: string;
+  };
+  
+  references: string[];
 }
 
 // --- Phase 4 Structures ---
@@ -88,7 +126,7 @@ export interface Phase4Data {
 }
 
 // Union type for content allows different structures per phase
-export type PhaseContent = string | Phase2Data | Phase4Data;
+export type PhaseContent = string | Phase2Data | Phase3Data | Phase4Data;
 
 export interface ProjectConfig {
   projectName: string;
@@ -105,7 +143,7 @@ export interface ProjectState {
   phases: {
     phase1: string; // Text
     phase2: Phase2Data; // Structured Tarea 2
-    phase3: string; // Text
+    phase3: Phase3Data; // Structured Tarea 3
     phase4: Phase4Data; // Structured
     phase5: string; // Text
   };

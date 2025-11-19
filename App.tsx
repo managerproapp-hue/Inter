@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase4Data, PhaseContent } from './types';
-import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_4, ROLE_DEFINITIONS, ODS_LIST } from './constants';
+import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, PhaseContent } from './types';
+import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, ROLE_DEFINITIONS, ODS_LIST } from './constants';
 import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus } from 'lucide-react';
-import { TextPhaseEditor, Phase2Editor, Phase4Editor } from './components/PhaseEditors';
+import { TextPhaseEditor, Phase2Editor, Phase3Editor, Phase4Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
 
@@ -222,7 +222,7 @@ export default function App() {
   const [mode, setMode] = useState<AppMode>(AppMode.LANDING);
   const [projectState, setProjectState] = useState<ProjectState>({
     config: null,
-    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: '', phase4: INITIAL_PHASE_4, phase5: '' },
+    phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: '' },
     lastModifiedBy: 'Sistema',
     lastModifiedDate: new Date().toISOString()
   });
@@ -296,7 +296,7 @@ export default function App() {
     setHasSavedSession(false);
     setProjectState({
       config: null,
-      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: '', phase4: INITIAL_PHASE_4, phase5: '' },
+      phases: { phase1: '', phase2: INITIAL_PHASE_2, phase3: INITIAL_PHASE_3, phase4: INITIAL_PHASE_4, phase5: '' },
       lastModifiedBy: 'Sistema',
       lastModifiedDate: new Date().toISOString()
     });
@@ -369,30 +369,17 @@ export default function App() {
       const newPhases = { ...prev.phases };
       const contrib = { ...importCandidate, author: authorName }; // Override author
       
-      // SMART MERGE LOGIC FOR PHASE 2 (TAREA 2)
+      // SMART MERGE LOGIC
       if (contrib.phaseId === 'phase2') {
+          // Phase 2 Logic (Previous)
           const currentP2 = newPhases.phase2 as Phase2Data;
           const incomingP2 = contrib.content as Phase2Data;
           
-          // Merge Lists with Explicit Authorship
-          const mergedTrends = [
-            ...currentP2.trends, 
-            ...incomingP2.trends.map(p => ({...p, author: authorName})) // Force attribution
-          ];
-          const mergedPublic = [
-            ...currentP2.publicAnalysis, 
-            ...incomingP2.publicAnalysis.map(c => ({...c, author: authorName}))
-          ];
-          const mergedMenu = [
-            ...currentP2.menuBenchmarking,
-            ...incomingP2.menuBenchmarking.map(d => ({...d, author: authorName}))
-          ];
-          const mergedGraphs = [
-            ...currentP2.graphs,
-            ...incomingP2.graphs.map(g => ({...g, author: authorName}))
-          ];
+          const mergedTrends = [...currentP2.trends, ...incomingP2.trends.map(p => ({...p, author: authorName}))];
+          const mergedPublic = [...currentP2.publicAnalysis, ...incomingP2.publicAnalysis.map(c => ({...c, author: authorName}))];
+          const mergedMenu = [...currentP2.menuBenchmarking, ...incomingP2.menuBenchmarking.map(d => ({...d, author: authorName}))];
+          const mergedGraphs = [...currentP2.graphs, ...incomingP2.graphs.map(g => ({...g, author: authorName}))];
 
-          // Merge Texts
           const newSynthesis = currentP2.synthesis 
             ? `${currentP2.synthesis}\n\n--- Aportación de ${authorName}: ---\n${incomingP2.synthesis}`
             : incomingP2.synthesis;
@@ -407,7 +394,7 @@ export default function App() {
           const mergedReports = [...currentP2.weeklyReports, ...incomingP2.weeklyReports];
 
           newPhases.phase2 = {
-            specificFocus: currentP2.specificFocus, // Keep local focus
+            specificFocus: currentP2.specificFocus,
             trends: mergedTrends,
             publicAnalysis: mergedPublic,
             menuBenchmarking: mergedMenu,
@@ -419,17 +406,56 @@ export default function App() {
             weeklyReports: mergedReports
           };
 
-          alert(`¡Fusión completada! Datos de ${authorName} añadidos exitosamente.`);
+          alert(`¡Fusión Fase 2 completada! Datos de ${authorName} añadidos.`);
+
+      } else if (contrib.phaseId === 'phase3') {
+          // PHASE 3 LOGIC (Tarea 3)
+          const currentP3 = newPhases.phase3 as Phase3Data;
+          const incomingP3 = contrib.content as Phase3Data;
+
+          // Merge Products (Text append)
+          const mergedProductList = currentP3.products.list + (incomingP3.products.list ? `\n\n[${authorName}]: ${incomingP3.products.list}` : '');
+          const mergedSust = currentP3.products.sustainability + (incomingP3.products.sustainability ? `\n\n[${authorName}]: ${incomingP3.products.sustainability}` : '');
+          const mergedImpact = currentP3.products.impactAnalysis + (incomingP3.products.impactAnalysis ? `\n\n[${authorName}]: ${incomingP3.products.impactAnalysis}` : '');
+          const mergedSources = [...new Set([...currentP3.products.sources, ...incomingP3.products.sources])];
+
+          // Merge Menu Dishes (Crucial for 20-dish goal)
+          const mergedDishes = [
+             ...currentP3.menu,
+             ...incomingP3.menu.map(d => ({ ...d, author: authorName }))
+          ];
+
+          // Merge Visual (Last wins or append if empty)
+          const mergedVisual = {
+             canvaDescription: currentP3.visual.canvaDescription || incomingP3.visual.canvaDescription,
+             qrUrl: currentP3.visual.qrUrl || incomingP3.visual.qrUrl,
+             physicalDescription: currentP3.visual.physicalDescription || incomingP3.visual.physicalDescription
+          };
+
+          const mergedRefs = [...new Set([...currentP3.references, ...incomingP3.references])];
+
+          newPhases.phase3 = {
+             products: {
+                list: mergedProductList,
+                sustainability: mergedSust,
+                impactAnalysis: mergedImpact,
+                sources: mergedSources
+             },
+             menu: mergedDishes,
+             visual: mergedVisual,
+             references: mergedRefs
+          };
+
+          alert(`¡Fusión Fase 3 completada! Platos de ${authorName} añadidos al menú grupal.`);
 
       } else {
-          // Simple overwrite/append for text phases
+          // Text phases
           const currentText = (newPhases as any)[contrib.phaseId];
           const incomingText = contrib.content;
           if (typeof currentText === 'string') {
             (newPhases as any)[contrib.phaseId] = currentText ? `${currentText}\n\n[Aporte de ${authorName}]:\n${incomingText}` : incomingText;
           } else {
-             // Phase 4 (Structured)
-             // Logic could be added here similar to Phase 2 if needed
+             // Fallback for Phase 4 if structure exists later
              (newPhases as any)[contrib.phaseId] = incomingText; 
           }
           alert(`Contenido de ${authorName} actualizado.`);
@@ -581,6 +607,8 @@ export default function App() {
                 <TextPhaseEditor data={(projectState.phases as any)[activePhaseId]} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase2' ? (
                 <Phase2Editor data={projectState.phases.phase2} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
+              ) : activePhaseId === 'phase3' ? (
+                <Phase3Editor data={projectState.phases.phase3} onUpdate={handlePhaseUpdate} projectContext={`Proyecto: ${projectState.config?.projectName}. Zona: ${projectState.config?.zone}`} />
               ) : activePhaseId === 'phase4' ? (
                 <Phase4Editor data={projectState.phases.phase4} onUpdate={handlePhaseUpdate} projectContext="" />
               ) : null}
@@ -624,8 +652,35 @@ export default function App() {
                <div className="text-center border-b-2 border-black pb-10 mb-10 break-after-page"><h1 className="text-4xl font-bold mb-4">{projectState.config?.projectName}</h1><h2 className="text-2xl text-slate-600 mb-8">{projectState.config?.teamName} | {projectState.config?.zone}</h2><div className="grid grid-cols-2 gap-4 text-left max-w-md mx-auto text-sm">{projectState.config?.members.map(m => (<div key={m.name} className="flex justify-between border-b border-slate-300 pb-1"><span className="font-bold">{m.role}:</span><span>{m.name}</span></div>))}</div></div>
                <div className="space-y-12">
                  <section><h3 className="text-2xl font-bold border-b border-black mb-4">1. Definición y Contexto</h3><div className="whitespace-pre-wrap leading-relaxed">{projectState.phases.phase1 || "Sin contenido."}</div></section>
-                 <section className="break-before-page"><h3 className="text-2xl font-bold border-b border-black mb-4">2. Tarea 2: Inmersión e Ideación</h3><div className="mb-8"><h4 className="font-bold text-xl mb-2 text-indigo-800">Informe Grupal</h4><div className="p-6 bg-slate-50 border rounded-lg space-y-4"><h5 className="text-2xl font-serif font-bold text-slate-900">{projectState.phases.phase2.concept.description || "Descripción pendiente"}</h5><div className="grid gap-2"><div><span className="font-bold">Plato Inicial:</span> {projectState.phases.phase2.concept.initialDish}</div><div><span className="font-bold">ODS Vinculados:</span> {projectState.phases.phase2.concept.linkedODS.join(', ')}</div></div></div><div className="mt-4"><h5 className="font-bold">Síntesis del Análisis</h5><p className="whitespace-pre-wrap text-sm">{projectState.phases.phase2.synthesis}</p></div></div><h4 className="font-bold text-lg mb-2 border-b pb-1">Investigación de Cartas</h4><table className="w-full text-sm text-left border-collapse mb-8"><thead><tr className="border-b border-slate-400 bg-slate-100"><th className="py-2 px-2">Restaurante</th><th className="py-2 px-2">Plato Sostenible</th><th className="py-2 px-2">ODS</th><th className="py-2 px-2">Autor</th></tr></thead><tbody>{projectState.phases.phase2.menuBenchmarking.map((p, i) => (<tr key={i} className="border-b border-slate-100"><td className="py-2 px-2 font-medium">{p.restaurantName} <span className="text-xs text-slate-500">({p.location})</span></td><td className="py-2 px-2">{p.sustainableDish}</td><td className="py-2 px-2">{p.ods}</td><td className="py-2 px-2 text-xs text-slate-500">{p.author || "-"}</td></tr>))}</tbody></table><h4 className="font-bold text-lg mb-2 border-b pb-1">Tendencias Detectadas</h4><ul className="list-disc pl-5 mb-8">{projectState.phases.phase2.trends.map((t, i) => (<li key={i} className="mb-1">{t.description} <span className="text-xs text-slate-400">({t.author})</span></li>))}</ul></section>
-                 <section><h3 className="text-2xl font-bold border-b border-black mb-4">3. Diseño de Oferta</h3><div className="whitespace-pre-wrap leading-relaxed">{projectState.phases.phase3 || "Sin contenido."}</div></section>
+                 
+                 <section className="break-before-page"><h3 className="text-2xl font-bold border-b border-black mb-4">2. Tarea 2: Inmersión e Ideación</h3><div className="mb-8"><h4 className="font-bold text-xl mb-2 text-indigo-800">Informe Grupal</h4><div className="p-6 bg-slate-50 border rounded-lg space-y-4"><h5 className="text-2xl font-serif font-bold text-slate-900">{projectState.phases.phase2.concept.description || "Descripción pendiente"}</h5><div className="grid gap-2"><div><span className="font-bold">Plato Inicial:</span> {projectState.phases.phase2.concept.initialDish}</div><div><span className="font-bold">ODS Vinculados:</span> {projectState.phases.phase2.concept.linkedODS.join(', ')}</div></div></div><div className="mt-4"><h5 className="font-bold">Síntesis del Análisis</h5><p className="whitespace-pre-wrap text-sm">{projectState.phases.phase2.synthesis}</p></div></div><h4 className="font-bold text-lg mb-2 border-b pb-1">Investigación de Cartas</h4><table className="w-full text-sm text-left border-collapse mb-8"><thead><tr className="border-b border-slate-400 bg-slate-100"><th className="py-2 px-2">Restaurante</th><th className="py-2 px-2">Plato Sostenible</th><th className="py-2 px-2">ODS</th><th className="py-2 px-2">Autor</th></tr></thead><tbody>{projectState.phases.phase2.menuBenchmarking.map((p, i) => (<tr key={i} className="border-b border-slate-100"><td className="py-2 px-2 font-medium">{p.restaurantName} <span className="text-xs text-slate-500">({p.location})</span></td><td className="py-2 px-2">{p.sustainableDish}</td><td className="py-2 px-2">{p.ods}</td><td className="py-2 px-2 text-xs text-slate-500">{p.author || "-"}</td></tr>))}</tbody></table></section>
+
+                 <section className="break-before-page">
+                   <h3 className="text-2xl font-bold border-b border-black mb-4">3. Tarea 3: Diseño de Oferta</h3>
+                   <h4 className="font-bold text-lg mb-2">Productos de Temporada</h4>
+                   <div className="whitespace-pre-wrap mb-6 bg-slate-50 p-4 rounded">{projectState.phases.phase3.products.list}</div>
+                   <h4 className="font-bold text-lg mb-2">Carta Final (20 Platos)</h4>
+                   <div className="grid gap-4">
+                     {['Aperitivo', 'Entrante', 'Principal', 'Postre'].map(cat => {
+                       const dishes = projectState.phases.phase3.menu.filter(d => d.category === cat);
+                       return (
+                         <div key={cat}>
+                            <h5 className="font-bold text-md uppercase border-b border-slate-300 mb-2 mt-2">{cat}s</h5>
+                            <ul className="space-y-2">
+                              {dishes.map((d, i) => (
+                                <li key={i} className="text-sm pb-2 mb-2 border-b border-slate-100 last:border-0">
+                                   <div className="font-bold">{d.name}</div>
+                                   <div className="text-slate-600 text-xs">{d.ingredients}</div>
+                                   <div className="text-[10px] text-slate-400 text-right italic">Autor: {d.author}</div>
+                                </li>
+                              ))}
+                            </ul>
+                         </div>
+                       )
+                     })}
+                   </div>
+                 </section>
+
                  <section className="break-before-page"><h3 className="text-2xl font-bold border-b border-black mb-4">4. Ejecución Práctica</h3><div className="grid gap-8">{projectState.phases.phase4.dishes.map(d => (<div key={d.id} className="border p-4 rounded bg-slate-50 print:border-slate-300"><h4 className="font-bold mb-2 uppercase">{d.dishName}</h4><div className="grid grid-cols-3 gap-4 text-xs"><div><span className="font-bold block">Expectativa:</span> {d.expectation}</div><div><span className="font-bold block">Realidad:</span> {d.reality}</div><div><span className="font-bold block">Mermas:</span> {d.waste}</div></div></div>))}</div><div className="mt-6"><h4 className="font-bold text-lg mb-2">Informe de Brigada</h4><p className="whitespace-pre-wrap">{projectState.phases.phase4.brigadeReport}</p></div></section>
                  <section><h3 className="text-2xl font-bold border-b border-black mb-4">5. Conclusiones</h3><div className="whitespace-pre-wrap leading-relaxed">{projectState.phases.phase5 || "Sin contenido."}</div></section>
                </div>
