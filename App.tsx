@@ -667,6 +667,7 @@ export default function App() {
 
             newPhases.phase3 = {
               ...currentP3,
+              ...incomingP3,
               products: { ...currentP3.products, list: mergedProductList },
               menu: mergedDishes,
               references: mergedRefs
@@ -997,7 +998,7 @@ export default function App() {
                   <div className="text-left max-w-md mx-auto w-full border-t border-slate-300 pt-8 mt-20">
                      <p className="mb-1 font-bold">Integrantes del Equipo ({projectState.config?.teamName}):</p>
                      <ul className="mb-8 space-y-1">
-                       {projectState.config?.members.map(m => (<li key={m.name} className="flex justify-between"><span>{m.name}</span> <span className="italic text-slate-500 text-sm">{m.role}</span></li>))}
+                       {(projectState.config?.members || []).map(m => (<li key={m.name} className="flex justify-between"><span>{m.name}</span> <span className="italic text-slate-500 text-sm">{m.role}</span></li>))}
                      </ul>
                      <p className="mb-1"><strong>Fecha:</strong> {projectState.config?.deliveryDate}</p>
                   </div>
@@ -1006,7 +1007,7 @@ export default function App() {
                {/* 2. RESUMEN */}
                <section className="mb-8">
                   <h3 className="text-lg font-bold uppercase mb-2">2. Resumen</h3>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.abstract || "[Pendiente de redacción en Fase 6]"}</p>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.abstract || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 3. INTRODUCCIÓN */}
@@ -1014,13 +1015,13 @@ export default function App() {
                   <h3 className="text-lg font-bold uppercase mb-2">3. Introducción</h3>
                   <h4 className="font-bold mb-1">3.1. Contexto y justificación del proyecto</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
-                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.introContext}</p>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introContext || ""}</p>
 
                   <h4 className="font-bold mb-1">3.2. Objetivos</h4>
-                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.introObjectives}</p>
+                  <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introObjectives || ""}</p>
                   
                   <h4 className="font-bold mb-1">3.3. Alcance y limitaciones</h4>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.projectScope || "[Pendiente de redacción en Fase 6]"}</p>
+                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.projectScope || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 4. ANÁLISIS DE EMPRESAS */}
@@ -1028,49 +1029,49 @@ export default function App() {
                    <h3 className="text-lg font-bold uppercase mb-2">4. Análisis y contextualización de empresas del sector</h3>
                    
                    <h4 className="font-bold mb-1">4.1. Caracterización de empresas del sector</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.sectorCharacterization}</p>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4.strategyDemand}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.sectorCharacterization || ""}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.strategyDemand || ""}</p>
 
                    <div className="pl-4 mb-4">
                       <p className="font-bold italic mb-1">4.1.1 Identificación de la empresa (Concepto Propio)</p>
-                      <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2.concept.name}</p>
-                      <p className="mb-2"><strong>Tipo:</strong> {projectState.phases.phase2.concept.restaurantType} | <strong>Estilo:</strong> {projectState.phases.phase2.concept.culinaryStyle}</p>
-                      <p className="text-justify italic mb-2">"{projectState.phases.phase2.concept.description}"</p>
+                      <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2?.concept?.name || ""}</p>
+                      <p className="mb-2"><strong>Tipo:</strong> {projectState.phases.phase2?.concept?.restaurantType || ""} | <strong>Estilo:</strong> {projectState.phases.phase2?.concept?.culinaryStyle || ""}</p>
+                      <p className="text-justify italic mb-2">"{projectState.phases.phase2?.concept?.description || ""}"</p>
                       
                       <p className="font-bold italic mb-1 mt-4">4.1.2 Análisis del sector (Tendencias)</p>
-                      <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase2.specificFocus}</p>
+                      <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase2?.specificFocus || ""}</p>
                       <ul className="list-disc list-inside pl-4 mb-2">
-                         {projectState.phases.phase2.trends.map(t => <li key={t.id}>{t.description}</li>)}
+                         {(projectState.phases.phase2?.trends || []).map(t => <li key={t.id}>{t.description}</li>)}
                       </ul>
                    </div>
 
                    <h4 className="font-bold mb-1">4.2. Productos y servicios</h4>
                    <div className="pl-4 mb-4">
-                      <p className="mb-2"><strong>Público Objetivo:</strong> {projectState.phases.phase2.concept.targetAudience}</p>
-                      <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong> {projectState.phases.phase3.products.list}</p>
+                      <p className="mb-2"><strong>Público Objetivo:</strong> {projectState.phases.phase2?.concept?.targetAudience || ""}</p>
+                      <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong> {projectState.phases.phase3?.products?.list || ""}</p>
                    </div>
 
                    <h4 className="font-bold mb-1">4.3. Relación con los ODS</h4>
                    <div className="pl-4 mb-4">
-                      <p className="mb-2"><strong>ODS del Negocio:</strong> {projectState.phases.phase2.concept.linkedODS.join(', ')}</p>
-                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3.products.sustainability}</p>
-                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase4.odsJustification}</p>
+                      <p className="mb-2"><strong>ODS del Negocio:</strong> {(projectState.phases.phase2?.concept?.linkedODS || []).join(', ')}</p>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3?.products?.sustainability || ""}</p>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase4?.odsJustification || ""}</p>
                    </div>
 
                    <h4 className="font-bold mb-1">4.4. Identificación de riesgos laborales</h4>
-                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase6.occupationalRisks || "[Pendiente de redacción en Fase 6]"}</p>
+                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase6?.occupationalRisks || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 5. DESARROLLO */}
                <section className="mb-8 break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">5. Desarrollo del Proyecto</h3>
                    <h4 className="font-bold mb-1">5.1. Metodología de trabajo</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6.methodology}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.methodology || ""}</p>
 
                    <h4 className="font-bold mb-1">5.2. Planificación y Cronograma</h4>
                    <div className="pl-4 mb-4">
                        <ul className="list-none space-y-2">
-                          {projectState.phases.phase4.timeline.map(act => (
+                          {(projectState.phases.phase4?.timeline || []).map(act => (
                              <li key={act.id} className="border-l-4 border-slate-300 pl-2">
                                 <span className="font-bold block">{act.activity}</span>
                                 <span className="text-sm text-slate-600">{act.dates} - {act.resources}</span>
@@ -1078,18 +1079,18 @@ export default function App() {
                           ))}
                        </ul>
                    </div>
-                   <p className="text-justify whitespace-pre-wrap mb-4"><strong>Logística:</strong> {projectState.phases.phase4.logistics}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4"><strong>Logística:</strong> {projectState.phases.phase4?.logistics || ""}</p>
 
                    <h4 className="font-bold mb-1">5.3. Viabilidad y Recursos</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4.technicalViability}</p>
-                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4.requiredResources}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4?.technicalViability || ""}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4?.requiredResources || ""}</p>
                </section>
 
                {/* 6. RESULTADOS */}
                <section className="mb-8 break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">6. Resultados y análisis</h3>
                    <h4 className="font-bold mb-1">6.1. Análisis de los resultados obtenidos</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6.resultsAnalysis || "[Pendiente de redacción en Fase 6]"}</p>
+                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.resultsAnalysis || "[Pendiente de redacción en Fase 6]"}</p>
                    
                    <h4 className="font-bold mb-2">Resumen de Costes (Escandallos)</h4>
                    <table className="w-full text-sm mb-4 border-collapse border border-slate-300">
@@ -1097,14 +1098,18 @@ export default function App() {
                        <tr className="bg-slate-100"><th className="border p-1 text-left">Plato</th><th className="border p-1 text-right">Coste</th><th className="border p-1 text-right">PVR</th><th className="border p-1 text-right">Margen</th></tr>
                      </thead>
                      <tbody>
-                       {projectState.phases.phase5.financials.map((f, i) => {
-                          const dishName = projectState.phases.phase3.menu.find(m => m.id === f.dishId)?.name || 'Plato desconocido';
-                          const margin = f.sellingPrice > 0 ? ((f.sellingPrice - f.totalCost) / f.sellingPrice * 100).toFixed(1) : '0';
+                       {(projectState.phases.phase5?.financials || []).map((f, i) => {
+                          const dishName = (projectState.phases.phase3?.menu || []).find(m => m.id === f.dishId)?.name || 'Plato desconocido';
+                          // Defensive checks for numbers
+                          const totalCost = Number(f.totalCost) || 0;
+                          const sellingPrice = Number(f.sellingPrice) || 0;
+                          const margin = sellingPrice > 0 ? ((sellingPrice - totalCost) / sellingPrice * 100).toFixed(1) : '0';
+                          
                           return (
                              <tr key={i}>
                                 <td className="border p-1">{dishName}</td>
-                                <td className="border p-1 text-right">{f.totalCost.toFixed(2)}€</td>
-                                <td className="border p-1 text-right">{f.sellingPrice.toFixed(2)}€</td>
+                                <td className="border p-1 text-right">{totalCost.toFixed(2)}€</td>
+                                <td className="border p-1 text-right">{sellingPrice.toFixed(2)}€</td>
                                 <td className="border p-1 text-right">{margin}%</td>
                              </tr>
                           )
@@ -1116,14 +1121,14 @@ export default function App() {
                {/* 7. CONCLUSIONES */}
                <section className="mb-8">
                    <h3 className="text-lg font-bold uppercase mb-2">7. Conclusiones y recomendaciones</h3>
-                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6.finalConclusions || "[Pendiente de redacción en Fase 6]"}</p>
+                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.finalConclusions || "[Pendiente de redacción en Fase 6]"}</p>
                </section>
 
                {/* 8. BIBLIOGRAFÍA */}
                <section className="mb-8 break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">8. Bibliografía</h3>
                    <ul className="list-disc list-inside pl-4">
-                      {[...projectState.phases.phase2.references, ...projectState.phases.phase3.references].map((ref, i) => (
+                      {[...(projectState.phases.phase2?.references || []), ...(projectState.phases.phase3?.references || [])].map((ref, i) => (
                          <li key={i}>{ref}</li>
                       ))}
                    </ul>
@@ -1133,7 +1138,7 @@ export default function App() {
                <section className="break-before-page">
                    <h3 className="text-lg font-bold uppercase mb-2">Anexos</h3>
                    <div className="grid grid-cols-2 gap-4 mb-8">
-                      {projectState.phases.phase3.menu.slice(0, 4).map((d, i) => (
+                      {(projectState.phases.phase3?.menu || []).slice(0, 4).map((d, i) => (
                          d.image && (
                            <div key={i} className="border p-2">
                               <img src={d.image} className="w-full h-40 object-cover mb-2" />
@@ -1145,7 +1150,7 @@ export default function App() {
                </section>
 
                {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
-               {(projectState.phases.phase6.coEvaluations || []).length > 0 && (
+               {(projectState.phases.phase6?.coEvaluations || []).length > 0 && (
                  <section className="break-before-page">
                      <div className="bg-slate-100 border-2 border-slate-300 p-6 rounded-xl">
                         <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
