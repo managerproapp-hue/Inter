@@ -124,6 +124,49 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
           </div>
        </div>
     </div>
+
+    {/* Footer with Creator Credits */}
+    <footer className="bg-slate-950 border-t border-slate-900 py-12">
+       <div className="max-w-4xl mx-auto px-6 flex flex-col items-center text-center gap-4 opacity-90">
+           
+           <p className="text-xs text-indigo-400 uppercase tracking-[0.2em] font-bold">Created by</p>
+           
+           <div className="flex items-center gap-5 bg-slate-900/50 p-5 rounded-3xl border border-slate-800 hover:border-indigo-500/50 transition-colors shadow-2xl cursor-default group">
+               <div className="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-[3px] shadow-2xl overflow-hidden relative">
+                   <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      {/* Using Google Drive ID from user link: 1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e */}
+                      <img 
+                        src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e" 
+                        alt="Juan Codina Logo" 
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          // Fallback text if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          if (target.parentElement) {
+                             target.parentElement.innerHTML = '<span class="font-serif font-bold text-3xl text-slate-900">JC</span>';
+                          }
+                        }}
+                      />
+                   </div>
+               </div>
+               <div className="text-left">
+                   <h3 className="text-3xl font-bold text-white leading-none font-serif tracking-tight mb-1">Juan Codina</h3>
+                   <p className="text-sm text-slate-400 font-medium">Original Design & Development</p>
+               </div>
+           </div>
+
+           <a 
+             href="https://www.canva.com/design/DAFSUqVcxJw/Vn5gSYiDgnt-_Ox9t1g7hA/view"
+             target="_blank"
+             rel="noopener noreferrer"
+             className="mt-4 text-[10px] text-slate-600 hover:text-indigo-400 transition-colors flex items-center gap-1.5 border-b border-transparent hover:border-indigo-400 pb-0.5"
+           >
+              <Sparkles className="w-3 h-3" /> 
+              Ver diseño original en Canva
+           </a>
+       </div>
+    </footer>
   </div>
 );
 
@@ -1221,7 +1264,7 @@ export default function App() {
                                     <td className="border border-slate-400 p-2 font-bold">{ev.reviewer}</td>
                                     <td className="border border-slate-400 p-2">{ev.target}</td>
                                     <td className="border border-slate-400 p-2 text-center font-bold">
-                                        {scoreVal > 0 ? '+' : ''}{scoreVal.toFixed(1)}
+                                        {scoreVal > 0 ? '+' : ''}{scoreVal.toFixed(2)}
                                     </td>
                                     <td className="border border-slate-400 p-2 italic">"{ev.justification}"</td>
                                   </tr>
