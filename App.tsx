@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6, ROLE_DEFINITIONS, ODS_LIST } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History } from 'lucide-react';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History, FileText } from 'lucide-react';
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor, Phase6Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
@@ -459,6 +459,7 @@ export default function App() {
   const [activePhaseId, setActivePhaseId] = useState('phase1');
   const [currentUser, setCurrentUser] = useState('');
   const [view, setView] = useState<'editor' | 'roadmap' | 'curriculum' | 'print'>('editor');
+  const [printMode, setPrintMode] = useState<'partial' | 'final'>('final');
   const [hasSavedSession, setHasSavedSession] = useState(false);
 
   // Smart Import State
@@ -973,9 +974,28 @@ export default function App() {
                  }
                `}</style>
                
-               <div className="no-print mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex justify-between items-center">
-                 <span><strong>Vista Oficial de Memoria:</strong> Formato Calibri 11, Interlineado 1.15, Márgenes 2.5cm.</span>
-                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded font-sans font-bold hover:bg-slate-700">Imprimir Memoria PDF</button>
+               <div className="no-print mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                 <div className="flex items-center gap-4">
+                   <span className="font-bold uppercase text-xs tracking-wider">Modo de Impresión:</span>
+                   <div className="flex bg-white rounded-lg border border-slate-300 overflow-hidden shadow-sm">
+                      <button 
+                        onClick={() => setPrintMode('partial')} 
+                        className={`px-4 py-2 text-xs font-bold transition-colors ${printMode === 'partial' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}
+                      >
+                        Memoria Parcial (Fase 4)
+                      </button>
+                      <div className="w-px bg-slate-300"></div>
+                      <button 
+                        onClick={() => setPrintMode('final')} 
+                        className={`px-4 py-2 text-xs font-bold transition-colors ${printMode === 'final' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}
+                      >
+                        Memoria Final (Fase 6)
+                      </button>
+                   </div>
+                 </div>
+                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded font-sans font-bold hover:bg-slate-700 flex items-center gap-2">
+                    <Printer className="w-4 h-4" /> Imprimir PDF
+                 </button>
                </div>
                
                {/* 1. PORTADA */}
@@ -990,7 +1010,9 @@ export default function App() {
                   </div>
 
                   <div className="mt-40">
-                    <h1 className="text-4xl font-bold mb-8 uppercase">{projectState.config?.projectName}</h1>
+                    <h1 className="text-4xl font-bold mb-8 uppercase">
+                      {printMode === 'final' ? (projectState.config?.projectName || 'PROYECTO FINAL') : 'ENTREGA PARCIAL: DISEÑO Y PLANIFICACIÓN'}
+                    </h1>
                     <h2 className="text-xl mb-2">Ciclo Formativo GM Cocina y Gastronomía</h2>
                     <h3 className="text-lg text-slate-600 mb-12">{projectState.config?.zone}</h3>
                   </div>
@@ -1000,75 +1022,90 @@ export default function App() {
                      <ul className="mb-8 space-y-1">
                        {(projectState.config?.members || []).map(m => (<li key={m.name} className="flex justify-between"><span>{m.name}</span> <span className="italic text-slate-500 text-sm">{m.role}</span></li>))}
                      </ul>
-                     <p className="mb-1"><strong>Fecha:</strong> {projectState.config?.deliveryDate}</p>
+                     <p className="mb-1"><strong>Fecha de Entrega:</strong> {projectState.config?.deliveryDate}</p>
                   </div>
                </div>
 
-               {/* 2. RESUMEN */}
-               <section className="mb-8">
-                  <h3 className="text-lg font-bold uppercase mb-2">2. Resumen</h3>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.abstract || "[Pendiente de redacción en Fase 6]"}</p>
-               </section>
+               {/* 2. RESUMEN (Only Final) */}
+               {printMode === 'final' && (
+                 <section className="mb-8">
+                    <h3 className="text-lg font-bold uppercase mb-2">2. Resumen</h3>
+                    <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.abstract || "[Pendiente de redacción en Fase 6]"}</p>
+                 </section>
+               )}
 
                {/* 3. INTRODUCCIÓN */}
                <section className="mb-8">
-                  <h3 className="text-lg font-bold uppercase mb-2">3. Introducción</h3>
-                  <h4 className="font-bold mb-1">3.1. Contexto y justificación del proyecto</h4>
+                  <h3 className="text-lg font-bold uppercase mb-2">{printMode === 'final' ? '3. Introducción' : '1. Introducción'}</h3>
+                  <h4 className="font-bold mb-1">Contexto y justificación del proyecto</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introContext || ""}</p>
 
-                  <h4 className="font-bold mb-1">3.2. Objetivos</h4>
+                  <h4 className="font-bold mb-1">Objetivos</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introObjectives || ""}</p>
                   
-                  <h4 className="font-bold mb-1">3.3. Alcance y limitaciones</h4>
-                  <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.projectScope || "[Pendiente de redacción en Fase 6]"}</p>
+                  {printMode === 'final' && (
+                    <>
+                      <h4 className="font-bold mb-1">Alcance y limitaciones</h4>
+                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.projectScope || "[Pendiente de redacción en Fase 6]"}</p>
+                    </>
+                  )}
                </section>
 
                {/* 4. ANÁLISIS DE EMPRESAS */}
                <section className="mb-8 break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">4. Análisis y contextualización de empresas del sector</h3>
+                   <h3 className="text-lg font-bold uppercase mb-2">{printMode === 'final' ? '4. Análisis y contextualización' : '2. Análisis del Sector y Diseño'}</h3>
                    
-                   <h4 className="font-bold mb-1">4.1. Caracterización de empresas del sector</h4>
+                   <h4 className="font-bold mb-1">Caracterización de empresas del sector</h4>
                    <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.sectorCharacterization || ""}</p>
                    <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.strategyDemand || ""}</p>
 
                    <div className="pl-4 mb-4">
-                      <p className="font-bold italic mb-1">4.1.1 Identificación de la empresa (Concepto Propio)</p>
+                      <p className="font-bold italic mb-1">Identificación de la empresa (Concepto Propio)</p>
                       <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2?.concept?.name || ""}</p>
                       <p className="mb-2"><strong>Tipo:</strong> {projectState.phases.phase2?.concept?.restaurantType || ""} | <strong>Estilo:</strong> {projectState.phases.phase2?.concept?.culinaryStyle || ""}</p>
                       <p className="text-justify italic mb-2">"{projectState.phases.phase2?.concept?.description || ""}"</p>
                       
-                      <p className="font-bold italic mb-1 mt-4">4.1.2 Análisis del sector (Tendencias)</p>
+                      <p className="font-bold italic mb-1 mt-4">Análisis del sector (Tendencias)</p>
                       <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase2?.specificFocus || ""}</p>
                       <ul className="list-disc list-inside pl-4 mb-2">
                          {(projectState.phases.phase2?.trends || []).map(t => <li key={t.id}>{t.description}</li>)}
                       </ul>
                    </div>
 
-                   <h4 className="font-bold mb-1">4.2. Productos y servicios</h4>
+                   <h4 className="font-bold mb-1">Productos y servicios</h4>
                    <div className="pl-4 mb-4">
                       <p className="mb-2"><strong>Público Objetivo:</strong> {projectState.phases.phase2?.concept?.targetAudience || ""}</p>
                       <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong> {projectState.phases.phase3?.products?.list || ""}</p>
                    </div>
 
-                   <h4 className="font-bold mb-1">4.3. Relación con los ODS</h4>
+                   <h4 className="font-bold mb-1">Relación con los ODS</h4>
                    <div className="pl-4 mb-4">
                       <p className="mb-2"><strong>ODS del Negocio:</strong> {(projectState.phases.phase2?.concept?.linkedODS || []).join(', ')}</p>
                       <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3?.products?.sustainability || ""}</p>
                       <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase4?.odsJustification || ""}</p>
                    </div>
 
-                   <h4 className="font-bold mb-1">4.4. Identificación de riesgos laborales</h4>
-                   <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase6?.occupationalRisks || "[Pendiente de redacción en Fase 6]"}</p>
+                   {printMode === 'final' && (
+                     <>
+                       <h4 className="font-bold mb-1">Identificación de riesgos laborales</h4>
+                       <p className="text-justify whitespace-pre-wrap pl-4 mb-4">{projectState.phases.phase6?.occupationalRisks || "[Pendiente de redacción en Fase 6]"}</p>
+                     </>
+                   )}
                </section>
 
                {/* 5. DESARROLLO */}
                <section className="mb-8 break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">5. Desarrollo del Proyecto</h3>
-                   <h4 className="font-bold mb-1">5.1. Metodología de trabajo</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.methodology || ""}</p>
+                   <h3 className="text-lg font-bold uppercase mb-2">{printMode === 'final' ? '5. Desarrollo del Proyecto' : '3. Planificación del Proyecto'}</h3>
+                   
+                   {printMode === 'final' && (
+                      <>
+                        <h4 className="font-bold mb-1">Metodología de trabajo</h4>
+                        <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.methodology || ""}</p>
+                      </>
+                   )}
 
-                   <h4 className="font-bold mb-1">5.2. Planificación y Cronograma</h4>
+                   <h4 className="font-bold mb-1">Planificación y Cronograma</h4>
                    <div className="pl-4 mb-4">
                        <ul className="list-none space-y-2">
                           {(projectState.phases.phase4?.timeline || []).map(act => (
@@ -1081,52 +1118,58 @@ export default function App() {
                    </div>
                    <p className="text-justify whitespace-pre-wrap mb-4"><strong>Logística:</strong> {projectState.phases.phase4?.logistics || ""}</p>
 
-                   <h4 className="font-bold mb-1">5.3. Viabilidad y Recursos</h4>
+                   <h4 className="font-bold mb-1">Viabilidad y Recursos</h4>
                    <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4?.technicalViability || ""}</p>
                    <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase4?.requiredResources || ""}</p>
                </section>
 
-               {/* 6. RESULTADOS */}
-               <section className="mb-8 break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">6. Resultados y análisis</h3>
-                   <h4 className="font-bold mb-1">6.1. Análisis de los resultados obtenidos</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.resultsAnalysis || "[Pendiente de redacción en Fase 6]"}</p>
-                   
-                   <h4 className="font-bold mb-2">Resumen de Costes (Escandallos)</h4>
-                   <table className="w-full text-sm mb-4 border-collapse border border-slate-300">
-                     <thead>
-                       <tr className="bg-slate-100"><th className="border p-1 text-left">Plato</th><th className="border p-1 text-right">Coste</th><th className="border p-1 text-right">PVR</th><th className="border p-1 text-right">Margen</th></tr>
-                     </thead>
-                     <tbody>
-                       {(projectState.phases.phase5?.financials || []).map((f, i) => {
-                          const dishName = (projectState.phases.phase3?.menu || []).find(m => m.id === f.dishId)?.name || 'Plato desconocido';
-                          // Defensive checks for numbers
-                          const totalCost = Number(f.totalCost) || 0;
-                          const sellingPrice = Number(f.sellingPrice) || 0;
-                          const margin = sellingPrice > 0 ? ((sellingPrice - totalCost) / sellingPrice * 100).toFixed(1) : '0';
-                          
-                          return (
-                             <tr key={i}>
-                                <td className="border p-1">{dishName}</td>
-                                <td className="border p-1 text-right">{totalCost.toFixed(2)}€</td>
-                                <td className="border p-1 text-right">{sellingPrice.toFixed(2)}€</td>
-                                <td className="border p-1 text-right">{margin}%</td>
-                             </tr>
-                          )
-                       })}
-                     </tbody>
-                   </table>
-               </section>
+               {/* 6. RESULTADOS (Only Final) */}
+               {printMode === 'final' && (
+                  <section className="mb-8 break-before-page">
+                      <h3 className="text-lg font-bold uppercase mb-2">6. Resultados y análisis</h3>
+                      <h4 className="font-bold mb-1">6.1. Análisis de los resultados obtenidos</h4>
+                      <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6?.resultsAnalysis || "[Pendiente de redacción en Fase 6]"}</p>
+                      
+                      <h4 className="font-bold mb-2">Resumen de Costes (Escandallos)</h4>
+                      <table className="w-full text-sm mb-4 border-collapse border border-slate-300">
+                        <thead>
+                          <tr className="bg-slate-100"><th className="border p-1 text-left">Plato</th><th className="border p-1 text-right">Coste Ración</th><th className="border p-1 text-right">PVP</th><th className="border p-1 text-right">% Food Cost</th></tr>
+                        </thead>
+                        <tbody>
+                          {(projectState.phases.phase5?.financials || []).map((f, i) => {
+                              const dishName = (projectState.phases.phase3?.menu || []).find(m => m.id === f.dishId)?.name || 'Plato desconocido';
+                              // Defensive checks for numbers
+                              const rations = f.numberOfRations || 1;
+                              const totalCost = Number(f.totalCost) || 0;
+                              const costPerRation = totalCost / rations;
+                              const sellingPrice = Number(f.sellingPrice) || 0;
+                              const foodCost = sellingPrice > 0 ? (costPerRation / sellingPrice * 100).toFixed(1) : '0';
+                              
+                              return (
+                                <tr key={i}>
+                                    <td className="border p-1">{dishName}</td>
+                                    <td className="border p-1 text-right">{costPerRation.toFixed(2)}€</td>
+                                    <td className="border p-1 text-right">{sellingPrice.toFixed(2)}€</td>
+                                    <td className="border p-1 text-right">{foodCost}%</td>
+                                </tr>
+                              )
+                          })}
+                        </tbody>
+                      </table>
+                  </section>
+               )}
 
-               {/* 7. CONCLUSIONES */}
-               <section className="mb-8">
-                   <h3 className="text-lg font-bold uppercase mb-2">7. Conclusiones y recomendaciones</h3>
-                   <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.finalConclusions || "[Pendiente de redacción en Fase 6]"}</p>
-               </section>
+               {/* 7. CONCLUSIONES (Only Final) */}
+               {printMode === 'final' && (
+                   <section className="mb-8">
+                       <h3 className="text-lg font-bold uppercase mb-2">7. Conclusiones y recomendaciones</h3>
+                       <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase6?.finalConclusions || "[Pendiente de redacción en Fase 6]"}</p>
+                   </section>
+               )}
 
                {/* 8. BIBLIOGRAFÍA */}
                <section className="mb-8 break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">8. Bibliografía</h3>
+                   <h3 className="text-lg font-bold uppercase mb-2">{printMode === 'final' ? '8. Bibliografía' : '4. Referencias Bibliográficas'}</h3>
                    <ul className="list-disc list-inside pl-4">
                       {[...(projectState.phases.phase2?.references || []), ...(projectState.phases.phase3?.references || [])].map((ref, i) => (
                          <li key={i}>{ref}</li>
@@ -1136,7 +1179,7 @@ export default function App() {
 
                {/* ANEXOS */}
                <section className="break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">Anexos</h3>
+                   <h3 className="text-lg font-bold uppercase mb-2">Anexo: Carta Visual</h3>
                    <div className="grid grid-cols-2 gap-4 mb-8">
                       {(projectState.phases.phase3?.menu || []).slice(0, 4).map((d, i) => (
                          d.image && (
@@ -1149,8 +1192,8 @@ export default function App() {
                    </div>
                </section>
 
-               {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL) */}
-               {(projectState.phases.phase6?.coEvaluations || []).length > 0 && (
+               {/* COEVALUACIÓN DIABÓLICA (ANEXO CONFIDENCIAL - Only Final) */}
+               {printMode === 'final' && (projectState.phases.phase6?.coEvaluations || []).length > 0 && (
                  <section className="break-before-page">
                      <div className="bg-slate-100 border-2 border-slate-300 p-6 rounded-xl">
                         <h3 className="text-lg font-bold uppercase mb-2 text-red-800">Anexo Confidencial: Coevaluación Diabólica</h3>
