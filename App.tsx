@@ -490,13 +490,14 @@ const SmartImportModal: React.FC<{
 const AttributionRenderer: React.FC<{ text: string, members?: any[] }> = ({ text, members }) => {
   if (!text) return null;
 
-  const splitParts = text.split(/(--- .*?: ---\n)/).filter(Boolean);
+  // Improved regex to handle cross-platform newlines and spaces better
+  const splitParts = text.split(/(--- .*?: ---\s+)/).filter(Boolean);
   
   const blocks = [];
   let currentAuthor = 'Inicio';
   
   for (let part of splitParts) {
-    const authorMatch = part.match(/--- (.*?): ---\n/);
+    const authorMatch = part.match(/--- (.*?): ---\s+/);
     if (authorMatch) {
       currentAuthor = authorMatch[1];
     } else {
@@ -875,7 +876,7 @@ export default function App() {
           )}
           {view === 'print' && (
             <div className="bg-white min-h-screen p-10 md:p-16 shadow-2xl print:shadow-none max-w-4xl mx-auto text-black" style={{ fontFamily: 'Calibri, sans-serif', fontSize: '11pt', lineHeight: '1.15' }}>
-               <style>{` @media print { @page { margin: 2.5cm; } body { -webkit-print-color-adjust: exact; } } `}</style>
+               <style>{` @media print { @page { margin: 2.5cm; } body { -webkit-print-color-adjust: exact; } .break-inside-avoid { break-inside: avoid; } } `}</style>
                <div className="no-print mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
                  <div className="flex items-center gap-4"><span className="font-bold uppercase text-xs tracking-wider">Modo de Impresión:</span><div className="flex bg-white rounded-lg border border-slate-300 overflow-hidden shadow-sm"><button onClick={() => setPrintMode('partial')} className={`px-4 py-2 text-xs font-bold transition-colors ${printMode === 'partial' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>Memoria Parcial (Fase 4)</button><div className="w-px bg-slate-300"></div><button onClick={() => setPrintMode('final')} className={`px-4 py-2 text-xs font-bold transition-colors ${printMode === 'final' ? 'bg-indigo-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}>Memoria Final (Fase 6)</button></div></div>
                  <button onClick={() => window.print()} className="bg-slate-900 text-white px-4 py-2 rounded font-sans font-bold hover:bg-slate-700 flex items-center gap-2"><Printer className="w-4 h-4" /> Imprimir PDF</button>
