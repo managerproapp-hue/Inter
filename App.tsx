@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6, ROLE_DEFINITIONS, ODS_LIST } from './constants';
@@ -964,7 +965,44 @@ export default function App() {
                    <p className="text-lg text-slate-600 mb-4 relative z-10">IES La Flota, Murcia - GM Cocina y Gastronomía</p>
                    <div className="inline-block px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-800 text-sm font-medium relative z-10"><strong>Proyecto:</strong> Oferta de una Carta Gastronómica Sostenible</div>
                 </div>
-                <p className="text-slate-500 italic">Consulta las instrucciones detalladas en cada fase del editor.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* ZONES SECTION */}
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-indigo-600"/>
+                      Zonas Gastronómicas (Sorteo)
+                    </h3>
+                    <ul className="space-y-3">
+                      {ZONES.map((zone, idx) => (
+                        <li key={idx} className="flex gap-3 text-sm text-slate-700 bg-slate-50 p-3 rounded border border-slate-100">
+                          <span className="font-bold text-indigo-500">{idx + 1}.</span>
+                          <span>{zone}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* ODS SECTION */}
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-emerald-600"/>
+                      ODS (Objetivos Desarrollo Sostenible)
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {ODS_LIST.map((ods, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-slate-700 p-2 hover:bg-emerald-50 rounded transition-colors">
+                           <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                             {ods.split('.')[0]}
+                           </div>
+                           <span>{ods.split('. ')[1] || ods}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-slate-500 italic text-center mt-8">Consulta las instrucciones detalladas en cada fase del editor.</p>
              </div>
           )}
           {view === 'curriculum' && (

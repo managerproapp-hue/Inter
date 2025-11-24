@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry, ProjectConfig, PlanningActivity } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6 } from '../constants';
@@ -646,11 +647,15 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       
       // Recalculate total cost automatically: Sum (Quantity * Unit Price)
       const newTotalCost = newIngs.reduce((acc, curr) => {
-         const qty = parseFloat(curr.quantity);
+         // Fix: Handle comma as decimal and "c/s" as 0
+         const cleanQty = curr.quantity.replace(',', '.');
+         const qty = parseFloat(cleanQty);
          const price = curr.price;
-         // If quantity is text like "c/s", parseFloat is NaN. Treat as 0 cost.
-         if (!isNaN(qty) && !isNaN(price)) {
-            return acc + (qty * price);
+         
+         const validQty = isNaN(qty) ? 0 : qty;
+         
+         if (!isNaN(price)) {
+            return acc + (validQty * price);
          }
          return acc;
       }, 0);
@@ -665,9 +670,11 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       newIngs.splice(idx, 1); 
       
       const newTotalCost = newIngs.reduce((acc, curr) => {
-         const qty = parseFloat(curr.quantity);
+         const cleanQty = curr.quantity.replace(',', '.');
+         const qty = parseFloat(cleanQty);
+         const validQty = isNaN(qty) ? 0 : qty;
          const price = curr.price;
-         if (!isNaN(qty) && !isNaN(price)) return acc + (qty * price);
+         if (!isNaN(price)) return acc + (validQty * price);
          return acc;
       }, 0);
 
@@ -757,8 +764,11 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                         {/* Ingredients Rows */}
                         <div className="text-sm">
                             {fin.ingredients.map((ing, idx) => {
-                                const qty = parseFloat(ing.quantity);
-                                const rowCost = !isNaN(qty) ? (qty * ing.price) : 0;
+                                const cleanQty = ing.quantity.replace(',', '.');
+                                const qty = parseFloat(cleanQty);
+                                const validQty = isNaN(qty) ? 0 : qty;
+                                const rowCost = (validQty * ing.price);
+
                                 return (
                                     <div key={idx} className="grid grid-cols-12 border-b border-slate-200 hover:bg-slate-50 group">
                                         <div className="col-span-4 p-1 border-r border-slate-200">

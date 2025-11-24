@@ -83,6 +83,7 @@ export const INITIAL_PHASE_3: Phase3Data = {
 export const INITIAL_PHASE_4: Phase4Data = {
   introContext: '',
   introObjectives: '',
+  mapImage: '',
   sectorCharacterization: '',
   strategyDemand: '',
   odsJustification: '',
@@ -163,7 +164,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
       description: "Planificar la ejecución de las actividades derivadas de la solución propuesta, definiendo un plan de intervención y su documentación asociada.",
       criteria: [
         "a) Se ha establecido una cronología detallada para cada actividad.",
-        "b) Se han asignado los recursos y la logística necesarios para cada fase.",
+        "b) Se ha asignado los recursos y la logística necesarios para cada fase.",
         "d) Se han detectado las actividades con riesgos potenciales durante su ejecución.",
         "e) Se ha integrado el plan de prevención de riesgos laborales.",
       ]
