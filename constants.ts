@@ -20,12 +20,23 @@ export const ROLES = [
 ];
 
 export const ODS_LIST = [
-  "1. Fin de la Pobreza", "2. Hambre Cero", "3. Salud y Bienestar", "4. Educación de Calidad",
-  "5. Igualdad de Género", "6. Agua Limpia y Saneamiento", "7. Energía Asequible y No Contaminante",
-  "8. Trabajo Decente", "9. Industria, Innovación e Infraestructura", "10. Reducción de las Desigualdades",
-  "11. Ciudades y Comunidades Sostenibles", "12. Producción y Consumo Responsables", 
-  "13. Acción por el Clima", "14. Vida Submarina", "15. Vida de Ecosistemas Terrestres",
-  "16. Paz, Justicia e Instituciones Sólidas", "17. Alianzas para lograr los objetivos"
+  "1. Fin de la pobreza",
+  "2. Hambre cero",
+  "3. Salud y bienestar",
+  "4. Educación de calidad",
+  "5. Igualdad de género",
+  "6. Agua limpia y saneamiento",
+  "7. Energía asequible y no contaminante",
+  "8. Trabajo decente y crecimiento económico",
+  "9. Industria, innovación e infraestructura",
+  "10. Reducción de las desigualdades",
+  "11. Ciudades y comunidades sostenibles",
+  "12. Producción y consumo responsables",
+  "13. Acción por el clima",
+  "14. Vida submarina",
+  "15. Vida de ecosistemas terrestres",
+  "16. Paz, justicia e instituciones sólidas",
+  "17. Alianzas para lograr los objetivos"
 ];
 
 export const INITIAL_PHASE_2: Phase2Data = {
@@ -141,7 +152,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
         "b) Se han generado, en equipo, propuestas de solución.",
         "c) Se ha recopilado información relevante sobre las soluciones planteadas.",
         "d) Se ha realizado un análisis de viabilidad técnica de las propuestas.",
-        "f) Se han definido las partes esenciales que componen el proyecto.",
+        "f) Se ha definido las partes esenciales que componen el proyecto.",
         "g) Se ha estimado la dotación de recursos humanos y materiales requeridos.",
         "h) Se ha elaborado un presupuesto económico detallado.",
         "j) Se han considerado los aspectos de calidad inherentes al proyecto.",

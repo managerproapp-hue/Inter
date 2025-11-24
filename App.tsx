@@ -134,13 +134,12 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
            <div className="flex items-center gap-5 bg-slate-900/50 p-5 rounded-3xl border border-slate-800 hover:border-indigo-500/50 transition-colors shadow-2xl cursor-default group">
                <div className="h-24 w-24 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-[3px] shadow-2xl overflow-hidden relative">
                    <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                      {/* Using Google Drive ID from user link: 1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e */}
+                      {/* Using Direct Link to fix loading issues */}
                       <img 
                         src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e" 
                         alt="Juan Codina Logo" 
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
-                          // Fallback text if image fails to load
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
                           if (target.parentElement) {
@@ -384,6 +383,7 @@ const getContentStats = (json: any): string[] => {
     if (p4.introContext) stats.push(`📄 Intro/Justificación`);
     if (p4.sectorCharacterization) stats.push(`🏭 Análisis Sector`);
     if (p4.timeline?.length) stats.push(`📅 ${p4.timeline.length} Actividades Planificadas`);
+    if (p4.mapImage) stats.push(`🗺️ Mapa Zona`);
   } else if (pid === 'phase5') {
     const p5 = c as Phase5Data;
     if (p5.financials?.length) stats.push(`💰 ${p5.financials.length} Escandallos`);
@@ -727,6 +727,7 @@ export default function App() {
             newPhases.phase4 = {
                 introContext: append(currentP4.introContext, incomingP4.introContext),
                 introObjectives: append(currentP4.introObjectives, incomingP4.introObjectives),
+                mapImage: incomingP4.mapImage || currentP4.mapImage, // Prefer new image if exists
                 sectorCharacterization: append(currentP4.sectorCharacterization, incomingP4.sectorCharacterization),
                 strategyDemand: append(currentP4.strategyDemand, incomingP4.strategyDemand),
                 odsJustification: append(currentP4.odsJustification, incomingP4.odsJustification),
@@ -1044,12 +1045,16 @@ export default function App() {
                {/* 1. PORTADA */}
                <div className="text-center pb-20 mb-10 break-after-page flex flex-col justify-center h-[90vh] relative">
                   {/* School Header */}
-                  <div className="absolute top-0 left-0 w-full flex flex-col items-center">
-                     {projectState.config?.schoolLogo && (
-                       <img src={projectState.config.schoolLogo} alt="Logo IES" className="h-32 mb-4 object-contain" />
-                     )}
-                     <h3 className="text-xl font-bold uppercase text-slate-800">{projectState.config?.schoolName}</h3>
-                     <p className="text-sm text-slate-600">{projectState.config?.schoolAddress}</p>
+                  <div className="absolute top-0 left-0 w-full flex justify-center">
+                     <div className="flex flex-col items-center gap-2 mb-4 max-w-2xl">
+                        {projectState.config?.schoolLogo && (
+                          <img src={projectState.config.schoolLogo} alt="Logo IES" className="h-24 w-auto object-contain" />
+                        )}
+                        <div className="text-center">
+                           <h3 className="text-xl font-bold uppercase text-slate-800 leading-tight">{projectState.config?.schoolName}</h3>
+                           <p className="text-sm text-slate-600">{projectState.config?.schoolAddress}</p>
+                        </div>
+                     </div>
                   </div>
 
                   <div className="mt-40">
@@ -1083,6 +1088,13 @@ export default function App() {
                   <h4 className="font-bold mb-1">Contexto y justificación del proyecto</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase1 || "[Pendiente de redacción en Fase 1]"}</p>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introContext || ""}</p>
+                  
+                  {projectState.phases.phase4?.mapImage && (
+                    <div className="mb-6 flex flex-col items-center">
+                       <img src={projectState.phases.phase4.mapImage} alt="Mapa de la zona" className="max-w-full h-auto max-h-96 border border-slate-200" />
+                       <p className="text-sm italic text-slate-500 mt-1">Figura 1. Mapa de la zona y densidad de restauración.</p>
+                    </div>
+                  )}
 
                   <h4 className="font-bold mb-1">Objetivos</h4>
                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.introObjectives || ""}</p>
@@ -1097,36 +1109,52 @@ export default function App() {
 
                {/* 4. ANÁLISIS DE EMPRESAS */}
                <section className="mb-8 break-before-page">
-                   <h3 className="text-lg font-bold uppercase mb-2">{printMode === 'final' ? '4. Análisis y contextualización' : '2. Análisis del Sector y Diseño'}</h3>
+                   <h3 className="text-lg font-bold uppercase mb-6 pb-2 border-b border-slate-200">{printMode === 'final' ? '4. Análisis y contextualización' : '2. Análisis del Sector y Diseño'}</h3>
                    
-                   <h4 className="font-bold mb-1">Caracterización de empresas del sector</h4>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.sectorCharacterization || ""}</p>
-                   <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.strategyDemand || ""}</p>
+                   <h4 className="font-bold mb-2 text-lg">Caracterización de empresas del sector</h4>
+                   <div className="mb-8 space-y-6">
+                     <p className="text-justify whitespace-pre-wrap leading-relaxed">{projectState.phases.phase4?.sectorCharacterization || ""}</p>
+                     <p className="text-justify whitespace-pre-wrap leading-relaxed">{projectState.phases.phase4?.strategyDemand || ""}</p>
+                   </div>
 
-                   <div className="pl-4 mb-4">
-                      <p className="font-bold italic mb-1">Identificación de la empresa (Concepto Propio)</p>
-                      <p className="mb-2"><strong>Nombre:</strong> {projectState.phases.phase2?.concept?.name || ""}</p>
-                      <p className="mb-2"><strong>Tipo:</strong> {projectState.phases.phase2?.concept?.restaurantType || ""} | <strong>Estilo:</strong> {projectState.phases.phase2?.concept?.culinaryStyle || ""}</p>
-                      <p className="text-justify italic mb-2">"{projectState.phases.phase2?.concept?.description || ""}"</p>
+                   <div className="pl-4 mb-8 border-l-4 border-slate-100 py-4">
+                      <p className="font-bold italic mb-2 text-lg">Identificación de la empresa (Concepto Propio)</p>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                          <p><strong>Nombre:</strong> {projectState.phases.phase2?.concept?.name || ""}</p>
+                          <p><strong>Tipo/Estilo:</strong> {projectState.phases.phase2?.concept?.restaurantType || ""} / {projectState.phases.phase2?.concept?.culinaryStyle || ""}</p>
+                      </div>
+                      <p className="text-justify italic mb-4 px-4 py-2 bg-slate-50 rounded">"{projectState.phases.phase2?.concept?.description || ""}"</p>
                       
-                      <p className="font-bold italic mb-1 mt-4">Análisis del sector (Tendencias)</p>
+                      <p className="font-bold italic mb-2 mt-6">Análisis del sector (Tendencias)</p>
                       <p className="text-justify whitespace-pre-wrap mb-2">{projectState.phases.phase2?.specificFocus || ""}</p>
-                      <ul className="list-disc list-inside pl-4 mb-2">
+                      <ul className="list-disc list-inside pl-4 mb-2 space-y-1">
                          {(projectState.phases.phase2?.trends || []).map(t => <li key={t.id}>{t.description}</li>)}
                       </ul>
                    </div>
 
-                   <h4 className="font-bold mb-1">Productos y servicios</h4>
-                   <div className="pl-4 mb-4">
-                      <p className="mb-2"><strong>Público Objetivo:</strong> {projectState.phases.phase2?.concept?.targetAudience || ""}</p>
-                      <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong> {projectState.phases.phase3?.products?.list || ""}</p>
+                   <h4 className="font-bold mb-2 text-lg">Productos y servicios</h4>
+                   <div className="pl-4 mb-8">
+                      <p className="mb-4 text-justify">
+                          <strong>Público Objetivo:</strong> {projectState.phases.phase2?.concept?.targetAudience || (projectState.phases.phase2?.publicAnalysis || []).map(p => p.profile).join(', ') || "Sin definir"}
+                      </p>
+                      <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong></p>
+                      <p className="text-justify whitespace-pre-wrap mb-2 text-sm leading-relaxed pl-2">{projectState.phases.phase3?.products?.list || ""}</p>
                    </div>
 
-                   <h4 className="font-bold mb-1">Relación con los ODS</h4>
+                   <h4 className="font-bold mb-2 text-lg">Relación con los ODS e Impacto</h4>
                    <div className="pl-4 mb-4">
                       <p className="mb-2"><strong>ODS del Negocio:</strong> {(projectState.phases.phase2?.concept?.linkedODS || []).join(', ')}</p>
-                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase3?.products?.sustainability || ""}</p>
-                      <p className="text-justify whitespace-pre-wrap">{projectState.phases.phase4?.odsJustification || ""}</p>
+                      <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase3?.products?.sustainability || ""}</p>
+                      <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase4?.odsJustification || ""}</p>
+                      
+                      {projectState.phases.phase3?.products?.impactAnalysis ? (
+                         <div className="mt-4 bg-slate-50 p-4 rounded border border-slate-100">
+                           <p className="font-bold text-sm italic mb-2">Análisis de Impacto Ambiental/Social:</p>
+                           <p className="text-justify whitespace-pre-wrap text-sm">{projectState.phases.phase3.products.impactAnalysis}</p>
+                         </div>
+                      ) : (
+                         <p className="text-xs italic text-slate-400">[Análisis de Impacto no redactado en Fase 3]</p>
+                      )}
                    </div>
 
                    {printMode === 'final' && (

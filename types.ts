@@ -1,4 +1,5 @@
 
+
 export enum RoleType {
   COORDINATOR = 'Coordinador',
   DOCUMENTATION = 'Documentación',
@@ -129,6 +130,7 @@ export interface Phase4Data {
   // 1. Introduction & Justification
   introContext: string; 
   introObjectives: string;
+  mapImage?: string; // NEW: Map of locality and restoration density
 
   // 2. Sector Analysis (RA1)
   sectorCharacterization: string;
@@ -151,7 +153,7 @@ export interface Phase4Data {
 
 export interface IngredientCost {
   name: string;
-  quantity: string;
+  quantity: string; // Changed to string to allow "c/s"
   unit: string; // kg, L, ud, manojo...
   price: number; // Precio unitario
 }

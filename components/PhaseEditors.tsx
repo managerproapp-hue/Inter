@@ -16,6 +16,47 @@ interface EditorProps {
   currentUser?: string; // For Phase 6 CoEval
 }
 
+// --- Helper: Image Resizer to prevent Base64 Bloat & Crashes ---
+// Stronger compression to avoid "white screen" crashes on mobile
+const handleImageUploadWithResize = (file: File, callback: (base64: string) => void) => {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new globalThis.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      // Limit to 600px max dimension for better performance
+      const MAX_WIDTH = 600;
+      const MAX_HEIGHT = 600;
+      
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+         ctx.drawImage(img, 0, 0, width, height);
+         // Compress to jpeg at 60% quality
+         callback(canvas.toDataURL('image/jpeg', 0.6)); 
+      }
+    };
+    img.src = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+};
+
 // --- Helper Component: Multi-Select ODS Dropdown ---
 interface ODSSelectorProps {
   selected: string | string[]; // Can be array or comma-separated string
@@ -157,11 +198,9 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempConfig(prev => prev ? ({ ...prev, schoolLogo: reader.result as string }) : null);
-      };
-      reader.readAsDataURL(file);
+      handleImageUploadWithResize(file, (base64) => {
+        setTempConfig(prev => prev ? ({ ...prev, schoolLogo: base64 }) : null);
+      });
     }
   };
 
@@ -388,12 +427,16 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
   const addDish = (category: DishCategory) => updateField('menu', [...state.menu, { id: Date.now().toString(), category, name: '', ingredients: '', elaboration: '', allergens: '', techniques: '', presentation: '', ods: '', author: '' }]);
   const removeDish = (id: string) => updateField('menu', state.menu.filter(d => d.id !== id));
   const updateDish = (id: string, field: keyof MenuDish, val: string) => updateField('menu', state.menu.map(d => d.id === id ? { ...d, [field]: val } : d));
-  const handleImageUpload = (id: string, file: File) => { const reader = new FileReader(); reader.onloadend = () => updateDish(id, 'image', reader.result as string); if(file) reader.readAsDataURL(file); };
+  const handleImageUpload = (id: string, file: File) => {
+     handleImageUploadWithResize(file, (base64) => {
+        updateDish(id, 'image', base64);
+     });
+  };
 
   return (
     <div className="space-y-6 pb-10">
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2"><button onClick={() => setActiveTab('Products')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Products' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>1. Productos</button><button onClick={() => setActiveTab('Menu')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Menu' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>2. Platos</button><button onClick={() => setActiveTab('Visual')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Visual' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>3. Visual</button></div>
-      {activeTab === 'Products' && (<div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Leaf className="w-5 h-5 text-emerald-600"/> Selección</h3><div><label className="block text-sm font-bold text-slate-700 mb-1">Lista</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.list} onChange={(e) => updateField('products', {...state.products, list: e.target.value})} /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-bold text-slate-700 mb-1">Sostenibilidad</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.sustainability} onChange={(e) => updateField('products', {...state.products, sustainability: e.target.value})} /></div><div><label className="block text-sm font-bold text-slate-700 mb-1">Impacto</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.impactAnalysis} onChange={(e) => updateField('products', {...state.products, impactAnalysis: e.target.value})} /></div></div></div>)}
+      {activeTab === 'Products' && (<div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"><h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Leaf className="w-5 h-5 text-emerald-600"/> Selección</h3><div><label className="block text-sm font-bold text-slate-700 mb-1">Lista</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.list} onChange={(e) => updateField('products', {...state.products, list: e.target.value})} /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label className="block text-sm font-bold text-slate-700 mb-1">Sostenibilidad</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.sustainability} onChange={(e) => updateField('products', {...state.products, sustainability: e.target.value})} /></div><div><label className="block text-sm font-bold text-slate-700 mb-1">Impacto (Análisis)</label><textarea className="w-full p-3 border rounded-lg h-24 text-sm" value={state.products.impactAnalysis} onChange={(e) => updateField('products', {...state.products, impactAnalysis: e.target.value})} /></div></div></div>)}
       {activeTab === 'Menu' && (<div className="space-y-8">{categories.map(cat => (<div key={cat} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><div className="flex justify-between items-center mb-4"><h3 className="font-bold text-slate-800 text-lg">{cat}s</h3><button onClick={() => addDish(cat)} className="text-indigo-600 text-sm font-medium flex items-center gap-1"><Plus className="w-4 h-4"/> Añadir</button></div><div className="space-y-6">{state.menu.filter(d => d.category === cat).map((dish) => (<div key={dish.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative"><button onClick={() => removeDish(dish.id)} className="absolute top-3 right-3 text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4"/></button><div className="grid grid-cols-1 lg:grid-cols-12 gap-6"><div className="col-span-1 lg:col-span-3 flex flex-col items-center gap-2"><div className="w-full aspect-square bg-slate-200 rounded-lg flex items-center justify-center overflow-hidden border border-slate-300 relative">{dish.image ? <img src={dish.image} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 text-slate-400" />}</div><label className="cursor-pointer px-3 py-1 bg-white border border-slate-300 rounded text-xs font-bold flex items-center gap-1"><Image className="w-3 h-3" /> Foto<input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(dish.id, e.target.files[0])} /></label></div><div className="col-span-1 lg:col-span-9 space-y-3"><input className="w-full p-2 border rounded bg-white font-bold" value={dish.name} onChange={(e) => updateDish(dish.id, 'name', e.target.value)} placeholder="Nombre" /><input className="w-full p-2 border rounded bg-white" value={dish.ingredients} onChange={(e) => updateDish(dish.id, 'ingredients', e.target.value)} placeholder="Ingredientes" /><div className="grid grid-cols-3 gap-4"><input className="p-2 border rounded bg-white text-sm" value={dish.allergens} onChange={(e) => updateDish(dish.id, 'allergens', e.target.value)} placeholder="Alérgenos" /><input className="p-2 border rounded bg-white text-sm" value={dish.techniques} onChange={(e) => updateDish(dish.id, 'techniques', e.target.value)} placeholder="Técnicas" /><ODSSelector selected={dish.ods} onChange={(val) => updateDish(dish.id, 'ods', val as string)} /></div><textarea className="w-full p-2 border rounded bg-white text-sm h-20" value={dish.elaboration} onChange={(e) => updateDish(dish.id, 'elaboration', e.target.value)} placeholder="Elaboración" /></div></div></div>))}</div></div>))}</div>)}
       {activeTab === 'Visual' && (<div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"><h3 className="text-lg font-bold text-slate-800 mb-4">Diseño Visual</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="font-bold text-slate-700">Enlace Canva</label><input className="w-full p-3 border rounded-lg" value={state.visual.canvaDescription} onChange={(e) => updateField('visual', {...state.visual, canvaDescription: e.target.value})} /></div><div><label className="font-bold text-slate-700">QR</label><input className="w-full p-3 border rounded-lg" value={state.visual.qrUrl} onChange={(e) => updateField('visual', {...state.visual, qrUrl: e.target.value})} /></div></div><div><label className="font-bold text-slate-700">Físico</label><textarea className="w-full p-3 border rounded-lg h-24" value={state.visual.physicalDescription} onChange={(e) => updateField('visual', {...state.visual, physicalDescription: e.target.value})} /></div></div>)}
     </div>
@@ -418,6 +461,12 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
      const n = [...(state.timeline || [])];
      n[idx] = { ...n[idx], [field]: val };
      updateField('timeline', n);
+  };
+  
+  const handleMapUpload = (file: File) => {
+    handleImageUploadWithResize(file, (base64) => {
+      updateField('mapImage', base64);
+    });
   };
 
   return (
@@ -453,6 +502,23 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
               <label className="block text-sm font-bold text-slate-700 mb-2">Objetivos del Proyecto</label>
               <p className="text-xs text-slate-500 mb-1">Generales y específicos (ej: reducir desperdicio, diseñar 20 platos km0).</p>
               <textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.introObjectives} onChange={(e) => updateField('introObjectives', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Mapa de la Zona / Densidad Restauración</label>
+              <div className="flex items-center gap-4 p-4 border rounded-lg bg-slate-50">
+                 {state.mapImage ? (
+                    <div className="relative group">
+                       <img src={state.mapImage} alt="Mapa Zona" className="h-32 w-auto object-cover rounded shadow-sm" />
+                       <button onClick={() => updateField('mapImage', '')} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-5 h-5"/></button>
+                    </div>
+                 ) : (
+                    <div className="h-32 w-48 bg-slate-200 rounded flex items-center justify-center text-slate-400 text-xs text-center p-2">Sin mapa</div>
+                 )}
+                 <label className="cursor-pointer bg-white border border-slate-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 transition-colors flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Subir Imagen Mapa
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleMapUpload(e.target.files[0])} />
+                 </label>
+              </div>
             </div>
          </div>
       )}
@@ -579,8 +645,15 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       newIngs[idx] = { ...newIngs[idx], [field]: val };
       
       // Recalculate total cost automatically: Sum (Quantity * Unit Price)
-      // Note: This assumes quantity is numeric in the string
-      const newTotalCost = newIngs.reduce((acc, curr) => acc + (parseFloat(curr.quantity || '0') * curr.price), 0);
+      const newTotalCost = newIngs.reduce((acc, curr) => {
+         const qty = parseFloat(curr.quantity);
+         const price = curr.price;
+         // If quantity is text like "c/s", parseFloat is NaN. Treat as 0 cost.
+         if (!isNaN(qty) && !isNaN(price)) {
+            return acc + (qty * price);
+         }
+         return acc;
+      }, 0);
       
       updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost: newTotalCost } : f)); 
   };
@@ -590,8 +663,29 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       if(!fin) return; 
       const newIngs = [...fin.ingredients]; 
       newIngs.splice(idx, 1); 
-      const newTotalCost = newIngs.reduce((acc, curr) => acc + (parseFloat(curr.quantity || '0') * curr.price), 0);
+      
+      const newTotalCost = newIngs.reduce((acc, curr) => {
+         const qty = parseFloat(curr.quantity);
+         const price = curr.price;
+         if (!isNaN(qty) && !isNaN(price)) return acc + (qty * price);
+         return acc;
+      }, 0);
+
       updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ingredients: newIngs, totalCost: newTotalCost } : f)); 
+  };
+
+  // Reverse Calculation logic: Target % Food Cost -> Set PVP
+  // Formula: FoodCost% = (Cost / PVP) * 100
+  // Therefore: PVP = Cost / (FoodCost% / 100)
+  const handleTargetFoodCostChange = (dishId: string, targetPercent: number) => {
+     const fin = state.financials.find(f => f.dishId === dishId);
+     if (!fin) return;
+     const costPerRation = (fin.totalCost || 0) / (fin.numberOfRations || 1);
+     
+     if (targetPercent > 0 && costPerRation > 0) {
+        const suggestedPVP = costPerRation / (targetPercent / 100);
+        updateFinancial(dishId, 'sellingPrice', parseFloat(suggestedPVP.toFixed(2)));
+     }
   };
 
   const addSensory = () => updateField('dishes', [...state.dishes, { id: Date.now().toString(), dishName: '', expectation: '', reality: '', waste: '' }]);
@@ -608,7 +702,7 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       {activeTab === 'Financials' && (
           <div className="space-y-6 animate-in fade-in">
              <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm border border-blue-100 flex gap-3">
-                 <DollarSign className="w-5 h-5 flex-shrink-0"/><div><p className="font-bold">Cálculo de Costes (Escandallo)</p><p>Selecciona un plato y detalla sus costes exactos por ración.</p></div>
+                 <DollarSign className="w-5 h-5 flex-shrink-0"/><div><p className="font-bold">Cálculo de Costes (Escandallo)</p><p>Selecciona un plato y detalla sus costes exactos por ración. Utiliza 'c/s' para cantidades no medibles.</p></div>
              </div>
              <div className="flex gap-2 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <select className="p-2 border rounded flex-1" id="dishSelect"><option value="">-- Seleccionar Plato Diseñado en Fase 3 --</option>{(menu || []).filter(m => !state.financials.find(f => f.dishId === m.id)).map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}</select>
@@ -663,14 +757,16 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                         {/* Ingredients Rows */}
                         <div className="text-sm">
                             {fin.ingredients.map((ing, idx) => {
-                                const rowCost = (parseFloat(ing.quantity || '0') * ing.price);
+                                const qty = parseFloat(ing.quantity);
+                                const rowCost = !isNaN(qty) ? (qty * ing.price) : 0;
                                 return (
                                     <div key={idx} className="grid grid-cols-12 border-b border-slate-200 hover:bg-slate-50 group">
                                         <div className="col-span-4 p-1 border-r border-slate-200">
                                             <input className="w-full bg-transparent px-2 py-1 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Nombre ingrediente..." value={ing.name} onChange={(e) => updateIngredient(fin.dishId, idx, 'name', e.target.value)} />
                                         </div>
                                         <div className="col-span-2 p-1 border-r border-slate-200">
-                                            <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" type="number" step="0.001" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} />
+                                            {/* Changed type to text to allow "c/s" */}
+                                            <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" type="text" placeholder="ej: 0.5 o c/s" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} />
                                         </div>
                                         <div className="col-span-2 p-1 border-r border-slate-200">
                                             <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" placeholder="kg, L, ud" value={ing.unit} onChange={(e) => updateIngredient(fin.dishId, idx, 'unit', e.target.value)} />
@@ -704,6 +800,22 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                 <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">% Food Cost (Coste MP / PVP)</div>
                                 <div className={`col-span-4 p-2 text-right font-mono font-bold ${foodCostPercent > 35 ? 'text-red-600' : 'text-emerald-600'}`}>{foodCostPercent.toFixed(1)} %</div>
                             </div>
+                            
+                            {/* Reverse Calc Section */}
+                            <div className="grid grid-cols-12 border-b border-slate-300 bg-white">
+                                <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300 flex items-center justify-end gap-2 text-indigo-600">
+                                  <Calculator className="w-3 h-3"/> Food Cost Objetivo (%) para calcular PVP
+                                </div>
+                                <div className="col-span-4 p-2 text-right">
+                                    <input 
+                                       type="number"
+                                       placeholder="Ej: 30"
+                                       className="w-full text-right p-1 bg-indigo-50 border border-indigo-200 rounded text-indigo-700 font-bold focus:ring-1 focus:ring-indigo-500"
+                                       onChange={(e) => handleTargetFoodCostChange(fin.dishId, parseFloat(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-12 border-b border-slate-300">
                                 <div className="col-span-8 p-2 text-right font-bold border-r border-slate-300">Margen Bruto de explotación (PVP - Coste)</div>
                                 <div className="col-span-4 p-2 text-right font-mono">{grossMargin.toFixed(2)} €</div>
