@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6, ROLE_DEFINITIONS, ODS_LIST } from './constants';
@@ -7,11 +5,6 @@ import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Sa
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor, Phase6Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
-
-// ... Landing, SetupConfig, SmartImportModal, etc ... 
-// (Re-declaring Landing, SetupConfig, SmartImportModal because I am overwriting the file. I need to include them. 
-//  Since the prompt asked to change existing file, I'll provide the full content or just the changed parts if possible.
-//  However, for App.tsx with major structural additions like attribution renderer, full content is safer to avoid context loss.)
 
 const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession: boolean, onResume: () => void, onClear: () => void }> = ({ onSelectMode, hasSavedSession, onResume, onClear }) => (
   <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-x-hidden">
@@ -353,8 +346,6 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onCan
 };
 
 // ... SmartImportModal and Helper ...
-// (Omitting full code for brevity if not changed significantly, but I changed merge logic. I'll provide full App.tsx to ensure all pieces work.)
-// --- Helper for Smart Import Modal (INSPECTOR) ---
 const getContentStats = (json: any): string[] => {
   const stats: string[] = [];
   
@@ -495,32 +486,10 @@ const SmartImportModal: React.FC<{
   );
 };
 
-// --- ATTRIBUTION RENDERER COMPONENT ---
-const AttributionRenderer: React.FC<{ text: string }> = ({ text }) => {
+// --- ATTRIBUTION RENDERER COMPONENT (ENHANCED) ---
+const AttributionRenderer: React.FC<{ text: string, members?: any[] }> = ({ text, members }) => {
   if (!text) return null;
 
-  // Split by "--- Name: ---" marker, capturing the name
-  const regex = /--- (.*?): ---\n/g;
-  let parts = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ author: 'Original/Otros', content: text.substring(lastIndex, match.index) });
-    }
-    const author = match[1];
-    lastIndex = regex.lastIndex;
-    
-    // Find end of this block? No, it just goes until next marker
-    // Actually regex loop finds starts.
-    // So the content is from lastIndex (end of marker) to next marker (which is handled in next iteration or end of string)
-  }
-  
-  // This logic is tricky with loop. simpler approach: split and process array
-  // We'll use split but need to keep delimiters to know who is who.
-  // Alternative: Regex split with capturing group returns separators.
-  
   const splitParts = text.split(/(--- .*?: ---\n)/).filter(Boolean);
   
   const blocks = [];
@@ -536,20 +505,35 @@ const AttributionRenderer: React.FC<{ text: string }> = ({ text }) => {
   }
 
   if (blocks.length === 0 && text.trim()) {
-     // No markers found, just raw text
+     // Default block if no markers
      return <p className="text-justify whitespace-pre-wrap mb-4">{text}</p>;
   }
 
+  const getRole = (name: string) => {
+    if (name === 'Inicio' || !members) return 'Colaboración Inicial';
+    const member = members.find(m => m.name === name);
+    return member ? member.role : 'Miembro del Equipo';
+  };
+
   return (
-    <div className="space-y-4 mb-4">
+    <div className="space-y-6 mb-6">
       {blocks.map((block, idx) => (
-        <div key={idx} className={`pl-4 border-l-4 ${block.author === 'Inicio' ? 'border-slate-300' : 'border-indigo-400 bg-indigo-50/30'} py-1 rounded-r-lg`}>
-           {block.author !== 'Inicio' && (
-             <span className="text-[10px] font-bold uppercase text-indigo-500 mb-1 block tracking-wider">
-                Aporte de: {block.author}
-             </span>
-           )}
-           <p className="text-justify whitespace-pre-wrap text-sm leading-relaxed">{block.content}</p>
+        <div key={idx} className="break-inside-avoid shadow-sm rounded-lg overflow-hidden border border-slate-200">
+           {/* Author Header Card */}
+           <div className={`px-4 py-2 flex justify-between items-center ${block.author === 'Inicio' ? 'bg-slate-100 text-slate-600' : 'bg-indigo-50 text-indigo-900 border-b border-indigo-100'}`}>
+              <div className="flex items-center gap-2">
+                 <div className={`w-2 h-2 rounded-full ${block.author === 'Inicio' ? 'bg-slate-400' : 'bg-indigo-500'}`}></div>
+                 <span className="font-bold text-xs uppercase tracking-wider">{block.author}</span>
+              </div>
+              <span className="text-[10px] font-medium opacity-70 bg-white/50 px-2 py-0.5 rounded">
+                {getRole(block.author)}
+              </span>
+           </div>
+           
+           {/* Content Body */}
+           <div className="p-4 bg-white">
+              <p className="text-justify whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{block.content}</p>
+           </div>
         </div>
       ))}
     </div>
@@ -919,8 +903,8 @@ export default function App() {
                      <p className="text-justify whitespace-pre-wrap mb-4">{projectState.phases.phase6.polishedTexts.intro}</p>
                   ) : (
                      <>
-                        <AttributionRenderer text={projectState.phases.phase1 || ""} />
-                        <AttributionRenderer text={projectState.phases.phase4?.introContext || ""} />
+                        <AttributionRenderer text={projectState.phases.phase1 || ""} members={projectState.config?.members} />
+                        <AttributionRenderer text={projectState.phases.phase4?.introContext || ""} members={projectState.config?.members} />
                      </>
                   )}
                   
@@ -929,7 +913,7 @@ export default function App() {
                   )}
 
                   <h4 className="font-bold mb-1">Objetivos</h4>
-                  <AttributionRenderer text={projectState.phases.phase4?.introObjectives || ""} />
+                  <AttributionRenderer text={projectState.phases.phase4?.introObjectives || ""} members={projectState.config?.members} />
                   
                   {printMode === 'final' && (
                     <>
@@ -948,8 +932,8 @@ export default function App() {
                        <p className="text-justify whitespace-pre-wrap leading-relaxed">{projectState.phases.phase6.polishedTexts.analysis}</p>
                      ) : (
                        <>
-                         <AttributionRenderer text={projectState.phases.phase4?.sectorCharacterization || ""} />
-                         <AttributionRenderer text={projectState.phases.phase4?.strategyDemand || ""} />
+                         <AttributionRenderer text={projectState.phases.phase4?.sectorCharacterization || ""} members={projectState.config?.members} />
+                         <AttributionRenderer text={projectState.phases.phase4?.strategyDemand || ""} members={projectState.config?.members} />
                        </>
                      )}
                    </div>
@@ -968,17 +952,17 @@ export default function App() {
                    <div className="pl-4 mb-8">
                       <p className="mb-4 text-justify"><strong>Público Objetivo:</strong> {projectState.phases.phase2?.concept?.targetAudience || (projectState.phases.phase2?.publicAnalysis || []).map(p => p.profile).join(', ') || "Sin definir"}</p>
                       <p className="mb-2"><strong>Oferta Gastronómica Principal:</strong></p>
-                      <AttributionRenderer text={projectState.phases.phase3?.products?.list || ""} />
+                      <AttributionRenderer text={projectState.phases.phase3?.products?.list || ""} members={projectState.config?.members} />
                    </div>
                    <h4 className="font-bold mb-2 text-lg">Relación con los ODS e Impacto</h4>
                    <div className="pl-4 mb-4">
                       <p className="mb-2"><strong>ODS del Negocio:</strong> {(projectState.phases.phase2?.concept?.linkedODS || []).join(', ')}</p>
-                      <AttributionRenderer text={projectState.phases.phase3?.products?.sustainability || ""} />
-                      <AttributionRenderer text={projectState.phases.phase4?.odsJustification || ""} />
+                      <AttributionRenderer text={projectState.phases.phase3?.products?.sustainability || ""} members={projectState.config?.members} />
+                      <AttributionRenderer text={projectState.phases.phase4?.odsJustification || ""} members={projectState.config?.members} />
                       {projectState.phases.phase3?.products?.impactAnalysis && (
                          <div className="mt-4 bg-slate-50 p-4 rounded border border-slate-100">
                            <p className="font-bold text-sm italic mb-2">Análisis de Impacto Ambiental/Social:</p>
-                           <AttributionRenderer text={projectState.phases.phase3.products.impactAnalysis} />
+                           <AttributionRenderer text={projectState.phases.phase3.products.impactAnalysis} members={projectState.config?.members} />
                          </div>
                       )}
                    </div>
@@ -1011,11 +995,11 @@ export default function App() {
                        </ul>
                    </div>
                    <p className="text-justify whitespace-pre-wrap mb-4"><strong>Logística:</strong></p>
-                   <AttributionRenderer text={projectState.phases.phase4?.logistics || ""} />
+                   <AttributionRenderer text={projectState.phases.phase4?.logistics || ""} members={projectState.config?.members} />
 
                    <h4 className="font-bold mb-1">Viabilidad y Recursos</h4>
-                   <AttributionRenderer text={projectState.phases.phase4?.technicalViability || ""} />
-                   <AttributionRenderer text={projectState.phases.phase4?.requiredResources || ""} />
+                   <AttributionRenderer text={projectState.phases.phase4?.technicalViability || ""} members={projectState.config?.members} />
+                   <AttributionRenderer text={projectState.phases.phase4?.requiredResources || ""} members={projectState.config?.members} />
                </section>
 
                {/* 6. RESULTADOS (Only Final) */}
