@@ -1,4 +1,5 @@
 
+
 import { LearningOutcome, RoleType, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data } from "./types";
 
 export const ZONES = [
@@ -119,6 +120,16 @@ export const INITIAL_PHASE_6: Phase6Data = {
   resultsAnalysis: '',
   finalConclusions: '',
   
+  // Visuals & Polish
+  coverImage: '',
+  teamImage: '',
+  polishedTexts: {
+    intro: '',
+    analysis: '',
+    design: '',
+    planning: ''
+  },
+
   // Links
   presentationUrl: '',
   virtualMenuUrl: '',

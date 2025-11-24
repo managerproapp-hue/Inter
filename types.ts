@@ -124,6 +124,7 @@ export interface PlanningActivity {
   activity: string;
   dates: string;
   resources: string;
+  author?: string; // Track who added the activity
 }
 
 export interface Phase4Data {
@@ -207,6 +208,16 @@ export interface Phase6Data {
   methodology: string; // 5.1 Metodología
   resultsAnalysis: string; // 6.1 Análisis de resultados
   finalConclusions: string; // 7.1 Conclusiones y recomendaciones
+
+  // Part C: Visuals & Polish (New)
+  coverImage?: string;
+  teamImage?: string;
+  polishedTexts?: {
+    intro?: string;
+    analysis?: string;
+    design?: string;
+    planning?: string;
+  };
 
   // Defense Links
   presentationUrl: string; 

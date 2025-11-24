@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry, ProjectConfig, PlanningActivity } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6 } from '../constants';
-import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock, Edit, Save, Upload, GraduationCap, AlertTriangle, FileUp, Clock, Hammer, Info } from 'lucide-react';
+import { Plus, Trash2, Wand2, Sparkles, Check, Search, Briefcase, MapPin, Target, Leaf, PieChart, Book, Users, Utensils, Image, Smartphone, ChevronDown, X, AlertCircle, Camera, Calendar, DollarSign, Store, Calculator, FileCheck, Presentation, Laptop, ShieldAlert, FileText, BarChart3, Flame, UserMinus, UserPlus, Lock, Edit, Save, Upload, GraduationCap, AlertTriangle, FileUp, Clock, Hammer, Info, PenTool } from 'lucide-react';
 import { enhanceText, suggestConcept } from '../services/geminiService';
 
 interface EditorProps {
@@ -15,6 +15,7 @@ interface EditorProps {
   onConfigUpdate?: (newConfig: ProjectConfig) => void;
   phase3Data?: Phase3Data; // Phase 5 needs access to Phase 3 menu
   currentUser?: string; // For Phase 6 CoEval
+  fullProjectData?: any; // For Phase 6 importing text
 }
 
 // --- Helper: Image Resizer to prevent Base64 Bloat & Crashes ---
@@ -682,8 +683,6 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
   };
 
   // Reverse Calculation logic: Target % Food Cost -> Set PVP
-  // Formula: FoodCost% = (Cost / PVP) * 100
-  // Therefore: PVP = Cost / (FoodCost% / 100)
   const handleTargetFoodCostChange = (dishId: string, targetPercent: number) => {
      const fin = state.financials.find(f => f.dishId === dishId);
      if (!fin) return;
@@ -719,8 +718,7 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
              <div className="space-y-8">
              {state.financials.map(fin => {
                    const dish = menu.find(m => m.id === fin.dishId);
-                   // Calculation variables
-                   const totalMaterialCost = fin.totalCost || 0; // Sum of ingredients
+                   const totalMaterialCost = fin.totalCost || 0;
                    const rations = fin.numberOfRations || 1;
                    const costPerRation = totalMaterialCost / rations;
                    const pvp = fin.sellingPrice || 0;
@@ -730,12 +728,10 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 
                    return (
                      <div key={fin.dishId} className="bg-white border border-slate-900 shadow-lg mx-auto max-w-4xl print:shadow-none print:border-2" style={{ fontFamily: 'Arial, sans-serif' }}>
-                        
                         {/* Header */}
                         <div className="bg-indigo-100 border-b-2 border-slate-900 p-4 text-center">
                             <h3 className="text-xl font-bold uppercase tracking-wider text-slate-900">Escandallo de Plato / Hoja de Coste</h3>
                         </div>
-                        
                         {/* Subheader Grid */}
                         <div className="grid grid-cols-12 border-b-2 border-slate-900 text-sm">
                             <div className="col-span-8 p-2 border-r border-slate-900">
@@ -775,7 +771,6 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                             <input className="w-full bg-transparent px-2 py-1 focus:bg-white focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Nombre ingrediente..." value={ing.name} onChange={(e) => updateIngredient(fin.dishId, idx, 'name', e.target.value)} />
                                         </div>
                                         <div className="col-span-2 p-1 border-r border-slate-200">
-                                            {/* Changed type to text to allow "c/s" */}
                                             <input className="w-full bg-transparent text-center px-2 py-1 focus:bg-white outline-none" type="text" placeholder="ej: 0.5 o c/s" value={ing.quantity} onChange={(e) => updateIngredient(fin.dishId, idx, 'quantity', e.target.value)} />
                                         </div>
                                         <div className="col-span-2 p-1 border-r border-slate-200">
@@ -849,7 +844,6 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                                 </div>
                             </div>
                         </div>
-                        
                         <div className="p-2 flex justify-end">
                            <button onClick={() => removeFinancial(fin.dishId)} className="text-red-400 hover:text-red-600 text-xs flex items-center gap-1"><Trash2 className="w-3 h-3" /> Eliminar Escandallo</button>
                         </div>
@@ -860,7 +854,6 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                     <div className="text-center p-10 border-2 border-dashed border-slate-300 rounded-xl text-slate-400">
                         <Calculator className="w-12 h-12 mx-auto mb-3 opacity-50" />
                         <p>No hay escandallos creados aún.</p>
-                        <p className="text-sm">Selecciona un plato arriba para comenzar.</p>
                     </div>
                 )}
                 </div>
@@ -883,10 +876,26 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 };
 
 // --- Structured Phase 6 Editor (Old Phase 5 - Memoria y Defensa) ---
-export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config }) => {
+export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config, fullProjectData }) => {
   const state: Phase6Data = data || INITIAL_PHASE_6;
-  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Defense' | 'CoEval'>('Checklist');
+  const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Edition' | 'Defense' | 'CoEval'>('Checklist');
   const updateField = (field: keyof Phase6Data, value: any) => onUpdate({ ...state, [field]: value });
+  
+  const updatePolished = (field: string, value: string) => {
+    updateField('polishedTexts', { ...state.polishedTexts, [field]: value });
+  };
+
+  const handleExtraImage = (field: 'coverImage' | 'teamImage', file: File) => {
+    handleImageUploadWithResize(file, (base64) => {
+      updateField(field, base64);
+    });
+  };
+  
+  const importDraftText = (target: string, sourceText: string) => {
+    if (window.confirm("¿Importar texto borrador? Esto sobrescribirá la edición actual de esta sección.")) {
+      updatePolished(target, sourceText || "");
+    }
+  };
 
   const addCoEval = () => { if(!currentUser) { alert("Selecciona tu usuario."); return; } updateField('coEvaluations', [...state.coEvaluations, { id: Date.now().toString(), reviewer: currentUser, target: '', justification: '', score: 0, timestamp: new Date().toISOString() }]); };
   const updateCoEval = (id: string, field: keyof CoEvaluationEntry, val: any) => updateField('coEvaluations', state.coEvaluations.map(c => c.id === id ? { ...c, [field]: val } : c));
@@ -897,15 +906,15 @@ export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
          <button onClick={() => setActiveTab('Checklist')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Checklist' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>1. Checklist</button>
          <button onClick={() => setActiveTab('Memory')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Memory' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>2. Memoria Final</button>
-         <button onClick={() => setActiveTab('Defense')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Defense' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>3. Defensa</button>
-         <button onClick={() => setActiveTab('CoEval')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'CoEval' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-800'}`}>4. Coevaluación</button>
+         <button onClick={() => setActiveTab('Edition')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Edition' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>3. Edición Visual 🖊️</button>
+         <button onClick={() => setActiveTab('Defense')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'Defense' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>4. Defensa</button>
+         <button onClick={() => setActiveTab('CoEval')} className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap ${activeTab === 'CoEval' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-800'}`}>5. Coevaluación</button>
       </div>
 
       {activeTab === 'Checklist' && (
           <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 animate-in fade-in">
              <h3 className="text-xl font-bold text-slate-800 mb-6">Checklist Entrega Final</h3>
              <div className="space-y-4 max-w-2xl">
-                {/* Checklist items same as before */}
                 <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer"><input type="checkbox" className="w-6 h-6 text-indigo-600 rounded" checked={state.individualChecklist.investigationDone} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, investigationDone: e.target.checked})} /><span className="font-bold text-slate-800 block">Investigación</span></label>
                 <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer"><input type="checkbox" className="w-6 h-6 text-indigo-600 rounded" checked={state.individualChecklist.dishesDesigned} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, dishesDesigned: e.target.checked})} /><span className="font-bold text-slate-800 block">Platos</span></label>
                 <label className="flex items-center gap-4 p-4 border rounded-xl hover:bg-slate-50 cursor-pointer"><input type="checkbox" className="w-6 h-6 text-indigo-600 rounded" checked={state.individualChecklist.selfEvalDone} onChange={(e) => updateField('individualChecklist', {...state.individualChecklist, selfEvalDone: e.target.checked})} /><span className="font-bold text-slate-800 block">Autoevaluación</span></label>
@@ -924,6 +933,63 @@ export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-sm font-bold text-slate-700 mb-2">6.1. Resultados</label><textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.resultsAnalysis} onChange={(e) => updateField('resultsAnalysis', e.target.value)} /></div><div><label className="block text-sm font-bold text-slate-700 mb-2">7. Conclusiones</label><textarea className="w-full p-3 border rounded-lg h-32 text-sm" value={state.finalConclusions} onChange={(e) => updateField('finalConclusions', e.target.value)} /></div></div>
              </div>
           </div>
+      )}
+      {activeTab === 'Edition' && (
+         <div className="space-y-6 animate-in fade-in">
+            <div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm border border-blue-100 flex gap-2">
+               <PenTool className="w-5 h-5 flex-shrink-0" />
+               <div>
+                 <p className="font-bold">Edición Visual y Pulido de Textos</p>
+                 <p>Aquí puedes subir fotos de portada/equipo y editar los textos finales para mejorar el estilo sin perder la autoría original (los textos originales se conservan para evaluación).</p>
+               </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Image className="w-5 h-5" /> Imágenes Extra</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Foto de Portada</label>
+                      <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 relative group">
+                         {state.coverImage ? <img src={state.coverImage} className="w-full h-40 object-cover rounded" /> : <div className="h-40 flex items-center justify-center text-slate-400">Sin foto</div>}
+                         <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                            Cambiar Foto <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExtraImage('coverImage', e.target.files[0])} />
+                         </label>
+                      </div>
+                   </div>
+                   <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Foto de Equipo (Agradecimientos)</label>
+                      <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 relative group">
+                         {state.teamImage ? <img src={state.teamImage} className="w-full h-40 object-cover rounded" /> : <div className="h-40 flex items-center justify-center text-slate-400">Sin foto</div>}
+                         <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                            Cambiar Foto <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleExtraImage('teamImage', e.target.files[0])} />
+                         </label>
+                      </div>
+                   </div>
+                </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><FileText className="w-5 h-5" /> Edición de Textos (Versión Impresa)</h3>
+               
+               {/* Polished Intro */}
+               <div>
+                  <div className="flex justify-between mb-2">
+                     <label className="block text-sm font-bold text-slate-700">Introducción (Editada)</label>
+                     <button onClick={() => importDraftText('intro', fullProjectData?.phases?.phase4?.introContext)} className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"><FileUp className="w-3 h-3"/> Importar Borrador Fase 4</button>
+                  </div>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm bg-slate-50 focus:bg-white transition-colors" placeholder="Texto final pulido para impresión..." value={state.polishedTexts?.intro || ""} onChange={(e) => updatePolished('intro', e.target.value)} />
+               </div>
+
+               {/* Polished Analysis */}
+               <div>
+                  <div className="flex justify-between mb-2">
+                     <label className="block text-sm font-bold text-slate-700">Análisis Sector (Editado)</label>
+                     <button onClick={() => importDraftText('analysis', fullProjectData?.phases?.phase4?.sectorCharacterization)} className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"><FileUp className="w-3 h-3"/> Importar Borrador Fase 4</button>
+                  </div>
+                  <textarea className="w-full p-3 border rounded-lg h-32 text-sm bg-slate-50 focus:bg-white transition-colors" placeholder="Texto final pulido para impresión..." value={state.polishedTexts?.analysis || ""} onChange={(e) => updatePolished('analysis', e.target.value)} />
+               </div>
+            </div>
+         </div>
       )}
       {activeTab === 'Defense' && (
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-in fade-in space-y-6">
