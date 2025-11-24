@@ -6,7 +6,13 @@ import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor
 
 // --- Sub-components ---
 
-const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession: boolean, onResume: () => void, onClear: () => void }> = ({ onSelectMode, hasSavedSession, onResume, onClear }) => (
+const Landing: React.FC<{ 
+  onSelectMode: (mode: AppMode) => void, 
+  hasSavedSession: boolean, 
+  onResume: () => void, 
+  onClear: () => void,
+  onImport: () => void 
+}> = ({ onSelectMode, hasSavedSession, onResume, onClear, onImport }) => (
   <div className="min-h-screen flex flex-col bg-slate-950 text-white overflow-x-hidden">
     
     {/* Hero Section */}
@@ -48,12 +54,20 @@ const Landing: React.FC<{ onSelectMode: (mode: AppMode) => void, hasSavedSession
                 </button>
               </div>
             ) : (
-              <button 
-                onClick={() => onSelectMode(AppMode.SETUP)}
-                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/50 transition-all transform hover:scale-105"
-              >
-                Comenzar Nuevo Proyecto
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={() => onSelectMode(AppMode.SETUP)}
+                  className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/50 transition-all transform hover:scale-105"
+                >
+                  Comenzar Nuevo Proyecto
+                </button>
+                <button 
+                  onClick={onImport}
+                  className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-lg shadow-lg border border-slate-700 transition-all transform hover:scale-105 flex items-center gap-2"
+                >
+                  <Upload className="w-5 h-5" /> Cargar Proyecto (Backup)
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -317,10 +331,11 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onImp
 const SmartImportModal: React.FC<{ 
   file: File | null, 
   onCancel: () => void, 
-  onConfirm: (author: string | null, isBackup: boolean) => void, 
+  onConfirm: (importedData: ProjectState, author: string | null, isBackup: boolean) => void, 
   members: {name: string, role: string}[] 
 }> = ({ file, onCancel, onConfirm, members }) => {
   const [analysis, setAnalysis] = useState<any>(null);
+  const [fileContent, setFileContent] = useState<any>(null);
   const [selectedAuthor, setSelectedAuthor] = useState<string>("");
   
   useEffect(() => {
@@ -329,6 +344,7 @@ const SmartImportModal: React.FC<{
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string);
+          setFileContent(json);
           // Analyze content
           const stats = {
             isBackup: !!json.phases, // Detect if full backup
@@ -409,8 +425,8 @@ const SmartImportModal: React.FC<{
              <div className="flex gap-3 justify-end">
                 <button onClick={onCancel} className="px-4 py-2 text-slate-500 hover:text-slate-800 font-medium">Cancelar</button>
                 <button 
-                   onClick={() => onConfirm(isBackup ? null : selectedAuthor, isBackup)}
-                   disabled={!isBackup && !selectedAuthor}
+                   onClick={() => onConfirm(fileContent, isBackup ? null : selectedAuthor, isBackup)}
+                   disabled={(!isBackup && !selectedAuthor) || !fileContent}
                    className={`px-6 py-2 rounded-lg text-white font-bold shadow-lg flex items-center gap-2 ${isBackup ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                    {isBackup ? <><AlertTriangle className="w-4 h-4"/> Sobrescribir Todo</> : <><CheckCircle className="w-4 h-4"/> Fusionar Pieza</>}
@@ -653,6 +669,7 @@ const App: React.FC = () => {
     if (isBackup) {
       setProjectState(importedState);
       alert("Copia de seguridad restaurada correctamente.");
+      setMode(AppMode.WORKSPACE); // FORCE SWITCH TO WORKSPACE
     } else {
       // Piece Merge Logic
       const newState = { ...projectState };
@@ -1036,7 +1053,24 @@ const App: React.FC = () => {
   const currentPhaseTitle = PHASES.find(p => p.id === activePhase)?.title;
 
   if (mode === AppMode.LANDING) {
-    return <Landing onSelectMode={setMode} hasSavedSession={!!projectState.config} onResume={handleResume} onClear={handleClear} />;
+    return (
+      <Landing 
+        onSelectMode={setMode} 
+        hasSavedSession={!!projectState.config} 
+        onResume={handleResume} 
+        onClear={handleClear} 
+        onImport={() => { 
+          const input = document.createElement('input'); 
+          input.type = 'file'; 
+          input.accept = '.json'; 
+          input.onchange = (e) => { 
+            const f = (e.target as HTMLInputElement).files?.[0]; 
+            if(f) { setPendingImportFile(f); setImportModalOpen(true); }
+          }; 
+          input.click(); 
+        }}
+      />
+    );
   }
 
   if (mode === AppMode.SETUP) {
@@ -1255,18 +1289,10 @@ const App: React.FC = () => {
          <SmartImportModal 
             file={pendingImportFile} 
             onCancel={() => { setImportModalOpen(false); setPendingImportFile(null); }}
-            onConfirm={(author, isBackup) => { executeSmartMerge(JSON.parse(JSON.stringify(projectState)), author, isBackup); setImportModalOpen(false); }} // Note: actual logic needs file read again or passed state. Simplified here, logic moved inside modal in real app or state passed. 
-            // Correction: The modal reads the file. We need to pass the PARSED content to executeSmartMerge.
-            // Let's fix the modal props to pass data back.
-            // Re-implementing logic correctly in Modal onConfirm:
-            // Actually, SmartImportModal parses file. It should pass the parsed object back to App.
-            // For simplicity in this mono-file, I will let the Modal parse and onConfirm receive the object if needed, 
-            // BUT SmartImportModal definition above only passed author/backup boolean.
-            // Let's adjust SmartImportModal to return the parsed JSON.
+            onConfirm={(importedData, author, isBackup) => { executeSmartMerge(importedData, author, isBackup); setImportModalOpen(false); }}
             members={projectState.config?.members || []}
          />
       )}
-      {/* Fix: SmartImportModal needs to pass back the parsed data to App */}
     </div>
   );
 };
