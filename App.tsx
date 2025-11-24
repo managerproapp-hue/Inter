@@ -869,7 +869,7 @@ const App: React.FC = () => {
 
                  <div className="mb-8">
                     <h3 className="font-bold text-lg mb-3 bg-slate-100 p-2 border-l-4 border-indigo-500">Análisis del sector (Tendencias)</h3>
-                    {phase2?.trends.length > 0 ? (
+                    {(phase2?.trends || []).length > 0 ? (
                        <ul className="list-disc pl-5 space-y-2 mb-4">
                           {phase2.trends.map((t, i) => (
                              <li key={i} className="text-sm">
@@ -891,7 +891,7 @@ const App: React.FC = () => {
 
                  <div className="mb-8">
                     <h3 className="font-bold text-lg mb-3 bg-slate-100 p-2 border-l-4 border-indigo-500">Relación con los ODS e Impacto</h3>
-                    <p className="font-bold text-sm mb-2 text-emerald-700">ODS del Negocio: <span className="font-normal text-slate-700">{phase2?.concept?.linkedODS?.join(', ') || "Ninguno"}</span></p>
+                    <p className="font-bold text-sm mb-2 text-emerald-700">ODS del Negocio: <span className="font-normal text-slate-700">{(phase2?.concept?.linkedODS || []).join(', ') || "Ninguno"}</span></p>
                     <AttributionRenderer text={phase4?.odsJustification || ""} config={projectState.config} />
                     
                     <h4 className="font-bold text-md mt-4 mb-2">Análisis de Impacto Ambiental/Social:</h4>
@@ -917,7 +917,7 @@ const App: React.FC = () => {
 
                  <h3 className="font-bold text-lg mb-2">Planificación y Cronograma</h3>
                  <div className="mb-6">
-                    {phase4?.timeline && phase4.timeline.length > 0 ? (
+                    {(phase4?.timeline || []).length > 0 ? (
                        <table className="w-full text-sm border-collapse border border-slate-300">
                           <thead><tr className="bg-slate-100"><th className="border p-2">Actividad</th><th className="border p-2">Fechas</th><th className="border p-2">Recursos</th></tr></thead>
                           <tbody>
@@ -951,12 +951,12 @@ const App: React.FC = () => {
                  <div className="document-font mb-6">{isFinal ? phase6?.resultsAnalysis : "[Pendiente de redacción en Fase 6]"}</div>
                  
                  <h3 className="font-bold text-lg mb-4">Resumen de Costes (Escandallos)</h3>
-                 {phase5?.financials.length > 0 ? (
+                 {(phase5?.financials || []).length > 0 ? (
                     <table className="w-full text-sm border-collapse border border-slate-300 mb-6">
                        <thead><tr className="bg-slate-100"><th className="border p-2 text-left">Plato</th><th className="border p-2">Coste Ración</th><th className="border p-2">PVP</th><th className="border p-2">% Food Cost</th></tr></thead>
                        <tbody>
                           {phase5.financials.map((f, i) => {
-                             const dishName = phase3?.menu.find(d => d.id === f.dishId)?.name || 'Plato';
+                             const dishName = (phase3?.menu || []).find(d => d.id === f.dishId)?.name || 'Plato';
                              const costPerRation = (f.totalCost || 0) / (f.numberOfRations || 1);
                              const foodCost = f.sellingPrice > 0 ? (costPerRation / f.sellingPrice) * 100 : 0;
                              return (
@@ -997,7 +997,7 @@ const App: React.FC = () => {
               <section>
                  <h2 className="text-xl font-bold uppercase border-b-2 border-slate-900 mb-6">ANEXO: CARTA VISUAL</h2>
                  <div className="grid grid-cols-2 gap-4">
-                     {phase3?.menu.filter(d => d.image).map(d => (
+                     {(phase3?.menu || []).filter(d => d.image).map(d => (
                         <div key={d.id} className="border p-2 rounded break-inside-avoid">
                            <img src={d.image} className="w-full h-48 object-cover rounded mb-2" />
                            <p className="font-bold text-center text-sm">{d.name}</p>
@@ -1031,7 +1031,7 @@ const App: React.FC = () => {
                              </tr>
                           </thead>
                           <tbody>
-                             {phase6?.coEvaluations.map((ev, i) => (
+                             {(phase6?.coEvaluations || []).map((ev, i) => (
                                 <tr key={i} className="border-b border-red-100">
                                    <td className="p-2 font-bold">{ev.reviewer}</td>
                                    <td className="p-2">{ev.target}</td>

@@ -352,7 +352,17 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 
 // --- Phase 2, 3 Editors ---
 export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, projectContext }) => {
-  const state: Phase2Data = { ...INITIAL_PHASE_2, ...data, concept: { ...INITIAL_PHASE_2.concept, ...(data?.concept || {}) } };
+  // Defensive coding: Ensure lists are initialized even if data comes from older version
+  const state: Phase2Data = { 
+    ...INITIAL_PHASE_2, 
+    ...(data || {}), 
+    trends: Array.isArray(data?.trends) ? data.trends : [],
+    publicAnalysis: Array.isArray(data?.publicAnalysis) ? data.publicAnalysis : [],
+    menuBenchmarking: Array.isArray(data?.menuBenchmarking) ? data.menuBenchmarking : [],
+    references: Array.isArray(data?.references) ? data.references : [],
+    concept: { ...INITIAL_PHASE_2.concept, ...(data?.concept || {}) } 
+  };
+
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [activeTab, setActiveTab] = useState<'PartA' | 'PartB'>('PartA');
   const updateField = (field: keyof Phase2Data, value: any) => onUpdate({ ...state, [field]: value });
@@ -420,7 +430,14 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 };
 
 export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate }) => {
-  const state: Phase3Data = data || INITIAL_PHASE_3;
+  // Defensive coding: Ensure menu and references are arrays
+  const state: Phase3Data = { 
+    ...INITIAL_PHASE_3, 
+    ...(data || {}),
+    menu: Array.isArray(data?.menu) ? data.menu : [],
+    references: Array.isArray(data?.references) ? data.references : []
+  };
+
   const [activeTab, setActiveTab] = useState<'Products' | 'Menu' | 'Visual'>('Products');
   const updateField = (field: keyof Phase3Data, value: any) => onUpdate({ ...state, [field]: value });
   const categories: DishCategory[] = ['Aperitivo', 'Entrante', 'Principal', 'Postre'];
@@ -875,7 +892,13 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
 
 // --- Structured Phase 6 Editor (Old Phase 5 - Memoria y Defensa) ---
 export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly, currentUser, config, fullProjectData }) => {
-  const state: Phase6Data = data || INITIAL_PHASE_6;
+  // Robustness: Ensure coEvaluations is an array
+  const state: Phase6Data = { 
+    ...INITIAL_PHASE_6, 
+    ...(data || {}),
+    coEvaluations: Array.isArray(data?.coEvaluations) ? data.coEvaluations : []
+  };
+
   const [activeTab, setActiveTab] = useState<'Checklist' | 'Memory' | 'Edition' | 'Defense' | 'CoEval'>('Checklist');
   const updateField = (field: keyof Phase6Data, value: any) => onUpdate({ ...state, [field]: value });
   
