@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, DishCategory, MenuDish, DishEval, DishFinancial, IngredientCost, CoEvaluationEntry, ProjectConfig, PlanningActivity } from '../types';
 import { ODS_LIST, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6 } from '../constants';
@@ -331,7 +329,7 @@ export const Phase1Editor: React.FC<EditorProps> = ({ data, onUpdate, isReadOnly
       </div>
 
       {/* Context Editor */}
-      <div className="flex-1 flex flex-col min-h-[300px]">
+      <div className="flex-1 flex flex-col min-h-[600px]">
         <div className="mb-4">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
              <Book className="w-5 h-5 text-indigo-600" /> Contexto y Justificación (Apartado 3.1)

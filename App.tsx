@@ -1115,6 +1115,35 @@ const App: React.FC = () => {
                           </div>
                        </div>
 
+                       {/* ROLES Y RESPONSABILIDADES */}
+                       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
+                          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg"><Users className="w-5 h-5 text-indigo-600"/> Roles y Responsabilidades del Equipo</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                             {ROLE_DEFINITIONS.map((role, idx) => {
+                                let bgColor = "bg-slate-50";
+                                let titleColor = "text-slate-800";
+                                let borderClass = "border-slate-200";
+                                
+                                // Color Coding
+                                if (role.role === RoleType.COORDINATOR) { bgColor="bg-indigo-50"; titleColor="text-indigo-900"; borderClass="border-indigo-100"; }
+                                else if (role.role === RoleType.DOCUMENTATION) { bgColor="bg-emerald-50"; titleColor="text-emerald-900"; borderClass="border-emerald-100"; }
+                                else if (role.role === RoleType.COMMUNICATION) { bgColor="bg-purple-50"; titleColor="text-purple-900"; borderClass="border-purple-100"; }
+                                else if (role.role === RoleType.RESOURCES) { bgColor="bg-amber-50"; titleColor="text-amber-900"; borderClass="border-amber-100"; }
+                                else if (role.role === RoleType.PRODUCTION) { bgColor="bg-pink-50"; titleColor="text-pink-900"; borderClass="border-pink-100"; }
+
+                                return (
+                                   <div key={idx} className={`p-4 rounded-lg border ${borderClass} ${bgColor} hover:shadow-md transition-shadow`}>
+                                      <h4 className={`font-bold ${titleColor} mb-1`}>{role.role}</h4>
+                                      <p className="text-xs font-medium text-slate-600 mb-3 italic">{role.tagline}</p>
+                                      <ul className="list-disc pl-3 text-[11px] text-slate-600 space-y-1">
+                                         {role.officialTasks.map((t, i) => <li key={i}>{t}</li>)}
+                                      </ul>
+                                   </div>
+                                )
+                             })}
+                          </div>
+                       </div>
+
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                               <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><MapPin className="w-5 h-5 text-indigo-600"/> Zonas Gastronómicas</h3>
