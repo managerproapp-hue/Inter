@@ -415,7 +415,7 @@ const SmartImportModal: React.FC<{
                       onChange={(e) => setSelectedAuthor(e.target.value)}
                    >
                       <option value="">-- Seleccionar Autor --</option>
-                      {members.map((m, i) => (
+                      {(members || []).map((m, i) => (
                          <option key={i} value={m.name}>{m.name} ({m.role})</option>
                       ))}
                    </select>
@@ -530,8 +530,8 @@ const Sidebar: React.FC<{
         onChange={(e) => onUserChange(e.target.value)}
       >
         <option value="">-- ¿Quién eres? --</option>
-        {state.config?.members.map(m => (
-          <option key={m.name} value={m.name}>{m.name} ({m.role})</option>
+        {state.config?.members.map((m, i) => (
+          <option key={i} value={m.name}>{m.name} ({m.role})</option>
         ))}
       </select>
     </div>
@@ -797,8 +797,8 @@ const App: React.FC = () => {
                    <div className="border-t-2 border-slate-900 pt-6">
                        <h4 className="font-bold mb-4 uppercase text-sm tracking-wider">Integrantes del Equipo ("{projectState.config.teamName}"):</h4>
                        <ul className="grid grid-cols-1 gap-2 text-sm">
-                           {projectState.config.members.map(m => (
-                               <li key={m.name} className="flex justify-between border-b border-dotted border-slate-300 pb-1">
+                           {projectState.config.members.map((m, i) => (
+                               <li key={i} className="flex justify-between border-b border-dotted border-slate-300 pb-1">
                                    <span className="font-bold">{m.name}</span>
                                    <span className="italic text-slate-500 bg-slate-100 px-2 rounded">{m.role}</span>
                                </li>
