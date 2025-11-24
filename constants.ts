@@ -1,5 +1,4 @@
 
-
 import { LearningOutcome, RoleType, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data } from "./types";
 
 export const ZONES = [
@@ -153,7 +152,7 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
         "f) Se ha diseñado una estrategia adecuada para responder a dichas demandas.",
         "g) Se ha valorado la dotación necesaria de recursos humanos y materiales.",
         "h) Se ha implementado un sistema de seguimiento de resultados acorde con la estrategia definida.",
-        "i) Se ha establecido la relación entre los productos/servicios ofrecidos y su posible aporte a los ODS."
+        "i) Se ha establecido la relación entre los productos/servicios ofrecidos y su posible aporte a los Objetivos de Desarrollo Sostenible (ODS)."
       ]
     },
     {
@@ -163,11 +162,14 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
         "a) Se han detectado y priorizado las necesidades del sector.",
         "b) Se han generado, en equipo, propuestas de solución.",
         "c) Se ha recopilado información relevante sobre las soluciones planteadas.",
-        "d) Se ha realizado un análisis de viabilidad técnica de las propuestas.",
+        "d) Se han incorporado elementos innovadores con potencial de aplicación práctica.",
+        "e) Se ha realizado un análisis de viabilidad técnica de las propuestas.",
         "f) Se ha definido las partes esenciales que componen el proyecto.",
         "g) Se ha estimado la dotación de recursos humanos y materiales requeridos.",
         "h) Se ha elaborado un presupuesto económico detallado.",
+        "i) Se ha redactado la documentación técnica necesaria para el diseño del proyecto.",
         "j) Se han considerado los aspectos de calidad inherentes al proyecto.",
+        "k) Se ha presentado públicamente el contenido más relevante del proyecto propuesto."
       ]
     },
     {
@@ -176,8 +178,68 @@ export const CURRICULUM: Record<string, LearningOutcome[]> = {
       criteria: [
         "a) Se ha establecido una cronología detallada para cada actividad.",
         "b) Se ha asignado los recursos y la logística necesarios para cada fase.",
+        "c) Se han identificado los permisos o autorizaciones obligatorios, en caso de requerirse.",
         "d) Se han detectado las actividades con riesgos potenciales durante su ejecución.",
-        "e) Se ha integrado el plan de prevención de riesgos laborales.",
+        "e) Se ha integrado el plan de prevención de riesgos laborales y se han previsto los equipos de protección necesarios.",
+        "f) Se han asignado recursos humanos y materiales específicos a cada tarea.",
+        "g) Se han contemplado posibles contingencias o imprevistos.",
+        "h) Se han diseñado medidas correctivas para hacer frente a dichos imprevistos.",
+        "i) Se ha elaborado toda la documentación técnica y administrativa requerida."
+      ]
+    },
+    {
+      code: "RA 4",
+      description: "Supervisar la ejecución de las actividades, asegurando el cumplimiento del plan establecido.",
+      criteria: [
+        "a) Se ha definido un procedimiento claro para el seguimiento de las actividades.",
+        "b) Se ha verificado que los resultados obtenidos cumplen con los estándares de calidad esperados.",
+        "c) Se han detectado desviaciones respecto al plan inicial o a los resultados previstos.",
+        "d) Se ha comunicado oportunamente cualquier desviación relevante a los responsables.",
+        "e) Se han implementado y documentado las acciones correctivas necesarias.",
+        "f) Se ha generado la documentación final para la evaluación integral de las actividades y del proyecto global."
+      ]
+    },
+    {
+      code: "RA 5",
+      description: "Comunicar información de forma clara, ordenada y estructurada, tanto interna como externamente.",
+      criteria: [
+        "a) Se ha mantenido una actitud metódica y organizada en la transmisión de la información.",
+        "b) Se ha facilitado comunicación verbal efectiva, tanto en horizontal (entre pares) como en vertical (con superiores o subordinados).",
+        "c) Se ha utilizado herramientas informáticas para la comunicación interna en el equipo.",
+        "d) Se ha adquirido familiaridad con la terminología técnica del sector en otros idiomas de uso internacional."
+      ]
+    }
+  ],
+  "Productos Culinarios (0048)": [
+    {
+      code: "RA 1",
+      description: "Organiza los procesos productivos y de servicio en cocina, interpretando información oral o escrita.",
+      criteria: ["a) Se han identificado y caracterizado los distintos ámbitos de producción y servicio en cocina."]
+    },
+    {
+      code: "RA 3",
+      description: "Elabora productos culinarios a partir de un conjunto de materias primas, evaluando alternativas creativas y funcionales.",
+      criteria: [
+        "b) Se ha valorado el aprovechamiento integral de los recursos disponibles (materias primas, tiempos, técnicas).",
+        "c) Se han diseñado elaboraciones que combinan los ingredientes de manera lógica, equilibrada y creativa."
+      ]
+    }
+  ],
+  "Postres en Restauración (0028)": [
+    {
+      code: "RA 7",
+      description: "Presenta postres emplatados a partir de elaboraciones de pastelería y repostería, integrando criterios estéticos y funcionales.",
+      criteria: [
+        "c) Se han aplicado técnicas de presentación y decoración acordes a las características del producto final y al contexto de servicio, garantizando equilibrio visual, textural y conceptual."
+      ]
+    }
+  ],
+  "Ofertas Gastronómicas (0045)": [
+    {
+      code: "RA 4",
+      description: "Calcula el coste global de la oferta gastronómica, analizando y ponderando todas las variables que lo componen.",
+      criteria: [
+        "d) Se han calculado y valorado los costes asociados a cada elaboración de cocina y/o pastelería/repostería, incluyendo materias primas, mano de obra, desperdicios, energía y otros gastos indirectos, con el fin de garantizar la viabilidad económica de la oferta."
       ]
     }
   ]
