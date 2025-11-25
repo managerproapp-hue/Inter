@@ -197,14 +197,14 @@ export const Phase2Editor: React.FC<EditorProps> = ({ data, onUpdate, projectCon
       {activeTab === 'PartB' && (
         <div className="space-y-8">
            <RoleBanner role={RoleType.COORDINATOR} isOwner={isCoordinator} />
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-emerald-500">
+           <div className={`bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-emerald-500 ${!isCoordinator ? 'opacity-80 grayscale-[0.3]' : ''}`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                 <div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-1">Nombre</label><input className="w-full p-3 border rounded-lg text-lg font-serif bg-slate-50" value={state.concept.name} onChange={(e) => updateField('concept', {...state.concept, name: e.target.value})} /></div>
-                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Tipo</label><input className="w-full p-2 border rounded" value={state.concept.restaurantType} onChange={(e) => updateField('concept', {...state.concept, restaurantType: e.target.value})} /></div>
-                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Estilo</label><input className="w-full p-2 border rounded" value={state.concept.culinaryStyle} onChange={(e) => updateField('concept', {...state.concept, culinaryStyle: e.target.value})} /></div>
-                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Cliente</label><input className="w-full p-2 border rounded" value={state.concept.targetAudience} onChange={(e) => updateField('concept', {...state.concept, targetAudience: e.target.value})} /></div>
-                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Precio</label><input className="w-full p-2 border rounded" value={state.concept.averagePrice} onChange={(e) => updateField('concept', {...state.concept, averagePrice: e.target.value})} /></div>
-                 <div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-1">Descripción</label><textarea className="w-full p-3 border rounded h-20 text-sm" value={state.concept.description} onChange={(e) => updateField('concept', {...state.concept, description: e.target.value})} /></div>
+                 <div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-1">Nombre</label><input className="w-full p-3 border rounded-lg text-lg font-serif bg-slate-50" value={state.concept.name} onChange={(e) => updateField('concept', {...state.concept, name: e.target.value})} disabled={!isCoordinator} /></div>
+                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Tipo</label><input className="w-full p-2 border rounded" value={state.concept.restaurantType} onChange={(e) => updateField('concept', {...state.concept, restaurantType: e.target.value})} disabled={!isCoordinator} /></div>
+                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Estilo</label><input className="w-full p-2 border rounded" value={state.concept.culinaryStyle} onChange={(e) => updateField('concept', {...state.concept, culinaryStyle: e.target.value})} disabled={!isCoordinator} /></div>
+                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Cliente</label><input className="w-full p-2 border rounded" value={state.concept.targetAudience} onChange={(e) => updateField('concept', {...state.concept, targetAudience: e.target.value})} disabled={!isCoordinator} /></div>
+                 <div><label className="block text-sm font-bold text-slate-700 mb-1">Precio</label><input className="w-full p-2 border rounded" value={state.concept.averagePrice} onChange={(e) => updateField('concept', {...state.concept, averagePrice: e.target.value})} disabled={!isCoordinator} /></div>
+                 <div className="col-span-2"><label className="block text-sm font-bold text-slate-700 mb-1">Descripción</label><textarea className="w-full p-3 border rounded h-20 text-sm" value={state.concept.description} onChange={(e) => updateField('concept', {...state.concept, description: e.target.value})} disabled={!isCoordinator} /></div>
               </div>
            </div>
         </div>
