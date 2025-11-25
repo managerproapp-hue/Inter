@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppMode, ProjectState, RoleType, ProjectConfig, Contribution, Phase2Data, Phase3Data, Phase4Data, Phase5Data, Phase6Data, PhaseContent } from './types';
 import { ZONES, ROLES, PHASES, CURRICULUM, INITIAL_PHASE_2, INITIAL_PHASE_3, INITIAL_PHASE_4, INITIAL_PHASE_5, INITIAL_PHASE_6, ROLE_DEFINITIONS, ODS_LIST } from './constants';
-import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History, FileText, ShieldAlert, X, ChevronDown, Check, Utensils, Presentation, Home, PieChart, ListTodo, Briefcase } from 'lucide-react';
+import { Download, Upload, FileJson, Users, ChevronRight, Printer, ArrowLeft, Save, Map, BookOpen, LayoutDashboard, CheckCircle, Globe, Target, Calendar, RotateCcw, Trash2, AlertTriangle, UserPlus, Sparkles, GraduationCap, Image as ImageIcon, MapPin, FileSearch, AlertOctagon, PackageOpen, History, FileText, ShieldAlert, X, ChevronDown, Check, Utensils, Presentation, Home, PieChart, ListTodo, Briefcase, FolderCog, Settings, FileUp, FileDown, HardDriveDownload } from 'lucide-react';
 import { TextPhaseEditor, Phase1Editor, Phase2Editor, Phase3Editor, Phase4Editor, Phase5Editor, Phase6Editor } from './components/PhaseEditors';
 
 // --- Sub-components ---
@@ -323,92 +323,125 @@ const SetupConfig: React.FC<{ onComplete: (config: ProjectConfig) => void, onImp
   );
 };
 
-// --- Smart Import Modal ---
-const SmartImportModal: React.FC<{ 
-  file: File | null, 
-  onCancel: () => void, 
-  onConfirm: (importedData: ProjectState, author: string | null, isBackup: boolean) => void, 
-  members: {name: string, role: string}[] 
-}> = ({ file, onCancel, onConfirm, members }) => {
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [fileContent, setFileContent] = useState<any>(null);
-  const [selectedAuthor, setSelectedAuthor] = useState<string>("");
-  
+// --- FileHub (Centro de Control) ---
+const FileHub: React.FC<{ 
+  isOpen: boolean, 
+  onClose: () => void,
+  onExport: () => void,
+  onImport: (content: any, author: string | null, isBackup: boolean) => void,
+  onBackupExport: () => void,
+  members: {name: string, role: string}[],
+  currentUser: string,
+  initialFile?: File | null
+}> = ({ isOpen, onClose, onExport, onImport, onBackupExport, members, currentUser, initialFile }) => {
+  const [activeTab, setActiveTab] = useState<'Export' | 'Import' | 'Backup'>('Export');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importAnalysis, setImportAnalysis] = useState<any>(null);
+  const [importAuthor, setImportAuthor] = useState<string>("");
+  const [importContent, setImportContent] = useState<any>(null);
+
   useEffect(() => {
-    if (file) {
+    if (initialFile) {
+       setImportFile(initialFile);
+       setActiveTab('Import');
+    }
+  }, [initialFile]);
+
+  useEffect(() => {
+    if (importFile) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const json = JSON.parse(e.target?.result as string);
-          setFileContent(json);
-          // Analyze content
-          const stats = {
-            isBackup: !!json.phases, // Detect if full backup
+          setImportContent(json);
+          setImportAnalysis({
+            isBackup: !!json.phases,
             trends: json.phase2?.trends?.length || 0,
             dishes: json.phase3?.menu?.length || 0,
             financials: json.phase5?.financials?.length || 0,
-            coEvals: json.phase6?.coEvaluations?.length || 0,
             timeline: json.phase4?.timeline?.length || 0,
             author: json.lastModifiedBy || "Desconocido"
-          };
-          setAnalysis(stats);
-        } catch (err) {
-          setAnalysis({ error: true });
-        }
+          });
+        } catch (err) { setImportAnalysis({ error: true }); }
       };
-      reader.readAsText(file);
-    }
-  }, [file]);
+      reader.readAsText(importFile);
+    } else { setImportAnalysis(null); setImportContent(null); }
+  }, [importFile]);
 
-  if (!file || !analysis) return null;
-  const isBackup = analysis.isBackup;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-       <div className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border-t-8 ${isBackup ? 'border-red-500' : 'border-emerald-500'}`}>
-          <div className="p-6">
-             <div className="flex items-center gap-3 mb-4">
-                <div className={`p-3 rounded-full ${isBackup ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                   {isBackup ? <AlertOctagon className="w-8 h-8"/> : <PackageOpen className="w-8 h-8"/>}
-                </div>
-                <div>
-                   <h3 className="text-xl font-bold text-slate-800">{isBackup ? "Copia de Seguridad Completa" : "Pieza del Proyecto"}</h3>
-                   <p className="text-sm text-slate-500">{file.name}</p>
-                </div>
-             </div>
-             <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
-                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Contenido Detectado</h4>
-                {analysis.error ? ( <p className="text-red-500 font-bold">Error: Archivo no válido</p> ) : (
-                   <ul className="text-sm space-y-1 text-slate-700">
-                      {isBackup && <li className="font-bold text-red-600">⚠️ Este archivo SOBRESCRIBIRÁ todo el proyecto.</li>}
-                      {!isBackup && (
-                        <>
-                           {analysis.trends > 0 && <li>• {analysis.trends} Tendencias (Fase 2)</li>}
-                           {analysis.dishes > 0 && <li>• {analysis.dishes} Platos (Fase 3)</li>}
-                           {analysis.timeline > 0 && <li>• {analysis.timeline} Actividades (Fase 4)</li>}
-                           {analysis.financials > 0 && <li>• {analysis.financials} Escandallos (Fase 5)</li>}
-                           {analysis.coEvals > 0 && <li>• {analysis.coEvals} Coevaluaciones (Fase 6)</li>}
-                           {analysis.trends === 0 && analysis.dishes === 0 && analysis.financials === 0 && <li>• Archivo de configuración o vacío</li>}
-                        </>
-                      )}
-                   </ul>
-                )}
-             </div>
-             {!isBackup && (
-                <div className="mb-6">
-                   <label className="block text-sm font-bold text-slate-700 mb-2">¿De quién es este aporte?</label>
-                   <select className="w-full p-3 border rounded-lg bg-indigo-50 border-indigo-200 text-indigo-900 font-bold focus:ring-2 focus:ring-indigo-500" value={selectedAuthor} onChange={(e) => setSelectedAuthor(e.target.value)}>
-                      <option value="">-- Seleccionar Autor --</option>
-                      {(members || []).map((m, i) => (<option key={i} value={m.name}>{m.name} ({m.role})</option>))}
-                   </select>
+       <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col h-[600px]">
+          <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
+             <div className="flex items-center gap-3"><FolderCog className="w-8 h-8 text-indigo-400" /><div><h2 className="text-2xl font-bold">Centro de Archivos</h2><p className="text-slate-400 text-sm">Gestión centralizada de aportes y copias de seguridad</p></div></div>
+             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+          </div>
+          <div className="flex border-b border-slate-200 bg-slate-50">
+             <button onClick={() => setActiveTab('Export')} className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 border-b-4 transition-colors ${activeTab === 'Export' ? 'border-indigo-500 text-indigo-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><FileUp className="w-4 h-4"/> Mis Aportes (Exportar)</button>
+             <button onClick={() => setActiveTab('Import')} className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 border-b-4 transition-colors ${activeTab === 'Import' ? 'border-emerald-500 text-emerald-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><FileDown className="w-4 h-4"/> Fusión e Importación</button>
+             <button onClick={() => setActiveTab('Backup')} className={`flex-1 py-4 font-bold text-sm flex items-center justify-center gap-2 border-b-4 transition-colors ${activeTab === 'Backup' ? 'border-amber-500 text-amber-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700'}`}><HardDriveDownload className="w-4 h-4"/> Copias de Seguridad</button>
+          </div>
+          <div className="p-8 flex-1 overflow-y-auto bg-slate-50">
+             {activeTab === 'Export' && (
+                <div className="text-center space-y-6 h-full flex flex-col justify-center items-center">
+                   <div className="p-6 bg-indigo-100 rounded-full text-indigo-600"><FileUp className="w-16 h-16" /></div>
+                   <h3 className="text-xl font-bold text-slate-800">¿Listo para enviar tu trabajo?</h3>
+                   <p className="text-slate-600 max-w-md">Genera un archivo con tus avances actuales para enviárselo al Coordinador. Incluye tus platos, tendencias y textos.</p>
+                   <button onClick={onExport} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-xl transition-transform hover:scale-105 flex items-center gap-3"><Download className="w-6 h-6" /> Descargar Mi Aporte (.json)</button>
                 </div>
              )}
-             <div className="flex gap-3 justify-end">
-                <button onClick={onCancel} className="px-4 py-2 text-slate-500 hover:text-slate-800 font-medium">Cancelar</button>
-                <button onClick={() => onConfirm(fileContent, isBackup ? null : selectedAuthor, isBackup)} disabled={(!isBackup && !selectedAuthor) || !fileContent} className={`px-6 py-2 rounded-lg text-white font-bold shadow-lg flex items-center gap-2 ${isBackup ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50 disabled:cursor-not-allowed`}>
-                   {isBackup ? <><AlertTriangle className="w-4 h-4"/> Sobrescribir Todo</> : <><CheckCircle className="w-4 h-4"/> Fusionar Pieza</>}
-                </button>
-             </div>
+             {activeTab === 'Import' && (
+                <div className="space-y-6">
+                   {!importFile ? (
+                      <label className="border-2 border-dashed border-slate-300 rounded-xl h-64 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+                         <Upload className="w-12 h-12 text-slate-400 mb-4" />
+                         <span className="font-bold text-slate-700">Haz clic para subir un archivo de un compañero</span>
+                         <span className="text-xs text-slate-500 mt-2">Soporta archivos .json de aportes</span>
+                         <input type="file" accept=".json" className="hidden" onChange={(e) => e.target.files?.[0] && setImportFile(e.target.files[0])} />
+                      </label>
+                   ) : (
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                         <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-3">
+                               <div className={`p-3 rounded-full ${importAnalysis?.isBackup ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{importAnalysis?.isBackup ? <AlertOctagon className="w-6 h-6"/> : <PackageOpen className="w-6 h-6"/>}</div>
+                               <div><h3 className="font-bold text-slate-800">{importFile.name}</h3><p className="text-xs text-slate-500">{importAnalysis?.isBackup ? "Backup Completo (Sobrescribe)" : "Pieza Individual (Fusiona)"}</p></div>
+                            </div>
+                            <button onClick={() => { setImportFile(null); setImportAnalysis(null); }} className="text-slate-400 hover:text-red-500"><Trash2 className="w-5 h-5" /></button>
+                         </div>
+                         {importAnalysis && !importAnalysis.error && (
+                            <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+                               <div className="bg-slate-50 p-3 rounded border"><strong>Tendencias:</strong> {importAnalysis.trends}</div>
+                               <div className="bg-slate-50 p-3 rounded border"><strong>Platos:</strong> {importAnalysis.dishes}</div>
+                               <div className="bg-slate-50 p-3 rounded border"><strong>Escandallos:</strong> {importAnalysis.financials}</div>
+                               <div className="bg-slate-50 p-3 rounded border"><strong>Actividades:</strong> {importAnalysis.timeline}</div>
+                            </div>
+                         )}
+                         {!importAnalysis?.isBackup && (
+                            <div className="mb-6">
+                               <label className="block text-sm font-bold text-slate-700 mb-2">Asignar Autoría A:</label>
+                               <select className="w-full p-2 border rounded bg-white" value={importAuthor} onChange={(e) => setImportAuthor(e.target.value)}>
+                                  <option value="">-- Seleccionar Miembro --</option>
+                                  {members.map((m, i) => <option key={i} value={m.name}>{m.name} ({m.role})</option>)}
+                               </select>
+                            </div>
+                         )}
+                         <div className="flex justify-end">
+                            <button onClick={() => { onImport(importContent, importAuthor, importAnalysis?.isBackup); setImportFile(null); onClose(); }} disabled={!importAnalysis?.isBackup && !importAuthor} className={`px-6 py-3 rounded-lg font-bold text-white shadow-lg flex items-center gap-2 ${importAnalysis?.isBackup ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'} disabled:opacity-50`}>
+                               {importAnalysis?.isBackup ? "⚠️ Restaurar Backup" : "✨ Fusionar Aporte"}
+                            </button>
+                         </div>
+                      </div>
+                   )}
+                </div>
+             )}
+             {activeTab === 'Backup' && (
+                <div className="text-center space-y-8 h-full flex flex-col justify-center items-center">
+                   <div className="p-6 bg-amber-100 rounded-full text-amber-600"><HardDriveDownload className="w-16 h-16" /></div>
+                   <div><h3 className="text-xl font-bold text-slate-800">Copia de Seguridad Maestra</h3><p className="text-slate-600 max-w-md mx-auto mt-2">Descarga el estado completo del proyecto. Útil para el profesor o para guardar hitos importantes.</p></div>
+                   <button onClick={onBackupExport} className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-lg shadow-xl transition-transform hover:scale-105 flex items-center gap-3"><Save className="w-6 h-6" /> Descargar Backup Total (.json)</button>
+                </div>
+             )}
           </div>
        </div>
     </div>
@@ -467,11 +500,9 @@ const Sidebar: React.FC<{
   onChangePhase: (id: string) => void,
   currentUser: string,
   onUserChange: (user: string) => void,
-  onExport: () => void,
-  onImportClick: () => void,
-  onBackup: () => void,
+  onOpenFileHub: () => void,
   onPrint: () => void
-}> = ({ state, activePhase, onChangePhase, currentUser, onUserChange, onExport, onImportClick, onBackup, onPrint }) => (
+}> = ({ state, activePhase, onChangePhase, currentUser, onUserChange, onOpenFileHub, onPrint }) => (
   <div className="w-72 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 overflow-hidden shadow-2xl z-40 print:hidden">
     <div className="p-6 border-b border-slate-800 bg-slate-950">
        <div className="flex items-center gap-3 mb-4">
@@ -538,15 +569,9 @@ const Sidebar: React.FC<{
       </div>
     </div>
 
-    <div className="p-4 border-t border-slate-800 bg-slate-950 space-y-2">
-       <button onClick={onExport} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-slate-700">
-          <Upload className="w-3 h-3" /> Exportar Mi Parte
-       </button>
-       <button onClick={onImportClick} className="w-full py-2 bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-400 rounded text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-emerald-900/50">
-          <Download className="w-3 h-3" /> Importar (Pieza/Backup)
-       </button>
-       <button onClick={onBackup} className="w-full py-2 bg-indigo-900/30 hover:bg-indigo-900/50 text-indigo-400 rounded text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-indigo-900/50">
-          <Save className="w-3 h-3" /> Guardar Backup Total
+    <div className="p-4 border-t border-slate-800 bg-slate-950">
+       <button onClick={onOpenFileHub} className="w-full py-3 bg-slate-800 hover:bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg border border-slate-700 hover:border-indigo-500 group">
+          <FolderCog className="w-5 h-5 text-indigo-400 group-hover:text-white transition-colors" /> Centro de Archivos
        </button>
     </div>
   </div>
@@ -572,7 +597,7 @@ const App: React.FC = () => {
   const [projectState, setProjectState] = useState<ProjectState>(initialProjectState);
   const [activePhase, setActivePhase] = useState<string>('dashboard');
   const [currentUser, setCurrentUser] = useState<string>('');
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [fileHubOpen, setFileHubOpen] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [printMode, setPrintMode] = useState<'partial' | 'final'>('partial');
 
@@ -688,7 +713,7 @@ const App: React.FC = () => {
   };
 
   const renderPrintView = () => {
-    // ... (Same print view logic as provided before, kept intact for brevity but included in full file)
+    // ... (Same print view logic, kept robust)
     if (!projectState.config) return null;
     const { phase1, phase2, phase3, phase4, phase5, phase6 } = projectState.phases;
     const isFinal = printMode === 'final';
@@ -706,7 +731,7 @@ const App: React.FC = () => {
                <div className="flex-1 flex flex-col items-center justify-center text-center gap-8"><div><h1 className="text-4xl font-extrabold uppercase leading-tight text-slate-900 mb-2">{isFinal ? 'MEMORIA FINAL DEL PROYECTO' : 'OFERTA DE UNA CARTA GASTRONÓMICA SOSTENIBLE'}</h1><h3 className="text-2xl text-slate-600 font-serif italic">Ciclo Formativo GM Cocina y Gastronomía</h3></div>{(isFinal && phase6?.coverImage) && (<div className="max-h-[300px] overflow-hidden rounded-xl border-4 border-white shadow-lg rotate-1"><img src={phase6.coverImage} className="h-full w-auto object-cover" /></div>)}<div className="text-lg text-slate-500 max-w-lg mx-auto border-t border-b border-slate-200 py-4">{projectState.config.zone}</div></div>
                <div className="pb-10"><div className="border-t-2 border-slate-900 pt-6"><h4 className="font-bold mb-4 uppercase text-sm tracking-wider">Integrantes del Equipo ("{projectState.config.teamName}"):</h4><ul className="grid grid-cols-1 gap-2 text-sm">{projectState.config.members.map((m, i) => (<li key={i} className="flex justify-between border-b border-dotted border-slate-300 pb-1"><span className="font-bold">{m.name}</span><span className="italic text-slate-500 bg-slate-100 px-2 rounded">{m.role}</span></li>))}</ul><p className="mt-6 text-right font-bold text-xs uppercase">Fecha de Entrega: {projectState.config.deliveryDate}</p></div></div>
            </div>
-           {/* Content Sections (Abbreviated for brevity, logic is robust) */}
+           {/* Content Sections */}
            <div className="px-10 py-10 text-justify leading-relaxed">
               {isFinal && (<section className="mb-10"><h2 className="text-xl font-bold uppercase border-b-2 border-slate-900 mb-4">2. RESUMEN</h2><div className="document-font">{phase6?.abstract || "[Pendiente de redacción en Fase 6]"}</div></section>)}
               <section className="mb-10"><h2 className="text-xl font-bold uppercase border-b-2 border-slate-900 mb-4">3. INTRODUCCIÓN</h2><h3 className="font-bold text-lg mb-2">Contexto y justificación</h3><AttributionRenderer text={isFinal && phase6?.polishedTexts?.intro ? phase6.polishedTexts.intro : (phase4?.introContext || phase1)} config={projectState.config} />{phase4?.mapImage && (<div className="my-6 text-center avoid-break"><img src={phase4.mapImage} className="max-h-[300px] max-w-full mx-auto border border-slate-300 p-1" /><p className="text-xs italic text-slate-500 mt-1">Fig 1. Mapa.</p></div>)}<h3 className="font-bold text-lg mt-6 mb-2">Objetivos</h3><AttributionRenderer text={phase4?.introObjectives || ""} config={projectState.config} /></section>
@@ -726,12 +751,12 @@ const App: React.FC = () => {
     );
   };
 
-  if (mode === AppMode.LANDING) return <Landing onSelectMode={setMode} hasSavedSession={!!projectState.config} onResume={handleResume} onClear={handleClear} onImport={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if(f) { setPendingImportFile(f); setImportModalOpen(true); }}; input.click(); }} />;
-  if (mode === AppMode.SETUP) return <SetupConfig onComplete={handleConfigComplete} onImport={(f) => { setPendingImportFile(f); setImportModalOpen(true); }} />;
+  if (mode === AppMode.LANDING) return <Landing onSelectMode={setMode} hasSavedSession={!!projectState.config} onResume={handleResume} onClear={handleClear} onImport={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if(f) { setPendingImportFile(f); setFileHubOpen(true); }}; input.click(); }} />;
+  if (mode === AppMode.SETUP) return <SetupConfig onComplete={handleConfigComplete} onImport={(f) => { setPendingImportFile(f); setFileHubOpen(true); }} />;
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <Sidebar state={projectState} activePhase={activePhase} onChangePhase={setActivePhase} currentUser={currentUser} onUserChange={setCurrentUser} onExport={handleExport} onImportClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if(f) { setPendingImportFile(f); setImportModalOpen(true); }}; input.click(); }} onBackup={handleExport} onPrint={() => setActivePhase('print')} />
+      <Sidebar state={projectState} activePhase={activePhase} onChangePhase={setActivePhase} currentUser={currentUser} onUserChange={setCurrentUser} onOpenFileHub={() => setFileHubOpen(true)} onPrint={() => setActivePhase('print')} />
       <div className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">
         {activePhase === 'print' ? renderPrintView() : (
           <>
@@ -746,6 +771,7 @@ const App: React.FC = () => {
                     <div className="space-y-8 animate-in fade-in">
                        <div className="bg-indigo-600 rounded-2xl p-8 text-white shadow-xl"><h1 className="text-3xl font-extrabold mb-4">Guía Didáctica</h1><p className="text-indigo-100 text-lg">Reto: Diseñar una oferta gastronómica real, sostenible y rentable.</p></div>
                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"><h3 className="font-bold text-slate-800 mb-4">Roles y Responsabilidades</h3><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{ROLE_DEFINITIONS.map((role, idx) => (<div key={idx} className="p-4 rounded-lg border border-slate-200 bg-slate-50"><h4 className="font-bold text-indigo-900 mb-1">{role.role}</h4><p className="text-xs font-medium text-slate-600 mb-3 italic">{role.tagline}</p></div>))}</div></div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="bg-white p-6 rounded-xl border border-slate-200"><h3 className="font-bold text-slate-800 mb-4">Zonas Gastronómicas</h3><ul className="text-sm space-y-2">{ZONES.map(z => <li key={z} className="text-slate-600">• {z}</li>)}</ul></div><div className="bg-white p-6 rounded-xl border border-slate-200"><h3 className="font-bold text-slate-800 mb-4">Objetivos (ODS)</h3><div className="flex flex-wrap gap-2">{ODS_LIST.map(ods => <span key={ods} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">{ods}</span>)}</div></div></div>
                     </div>
                  )}
                  {activePhase === 'curriculum' && (<div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200"><h2 className="text-2xl font-bold text-slate-800 mb-6">Criterios de Evaluación</h2>{Object.entries(CURRICULUM).map(([m, outcomes]) => (<div key={m} className="mb-8"><h3 className="font-bold text-indigo-700 bg-indigo-50 p-2 rounded mb-4">{m}</h3>{outcomes.map(ra => (<div key={ra.code} className="pl-4 border-l-4 border-indigo-200 mb-4"><h4 className="font-bold">{ra.code}</h4><p>{ra.description}</p></div>))}</div>))}</div>)}
@@ -760,7 +786,7 @@ const App: React.FC = () => {
           </>
         )}
       </div>
-      {importModalOpen && <SmartImportModal file={pendingImportFile} onCancel={() => { setImportModalOpen(false); setPendingImportFile(null); }} onConfirm={(importedData, author, isBackup) => { executeSmartMerge(importedData, author, isBackup); setImportModalOpen(false); }} members={projectState.config?.members || []} />}
+      {fileHubOpen && <FileHub isOpen={fileHubOpen} onClose={() => { setFileHubOpen(false); setPendingImportFile(null); }} onExport={handleExport} onImport={(d, a, b) => { executeSmartMerge(d, a, b); setFileHubOpen(false); setPendingImportFile(null); }} onBackupExport={handleExport} members={projectState.config?.members || []} currentUser={currentUser} initialFile={pendingImportFile} />}
     </div>
   );
 };

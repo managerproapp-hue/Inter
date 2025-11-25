@@ -89,7 +89,7 @@ export const TextPhaseEditor: React.FC<EditorProps> = ({ data, onUpdate, isReadO
   return (
     <div className="space-y-4 h-full flex flex-col">
       {!isReadOnly && (<div className="flex justify-end"><button onClick={handleAI} disabled={loading || !data} className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50">{loading ? <Sparkles className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}{loading ? 'Mejorando...' : 'Mejorar con Gemini IA'}</button></div>)}
-      <textarea className="w-full flex-1 p-6 border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none document-font text-lg leading-relaxed text-slate-700" value={data || ''} onChange={(e) => onUpdate(e.target.value)} placeholder="Escribe aquí..." readOnly={isReadOnly} />
+      <textarea className="w-full flex-1 p-6 border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none document-font text-lg leading-relaxed text-slate-700 min-h-[600px]" value={data || ''} onChange={(e) => onUpdate(e.target.value)} placeholder="Escribe aquí..." readOnly={isReadOnly} />
     </div>
   );
 };
@@ -247,11 +247,17 @@ export const Phase3Editor: React.FC<EditorProps> = ({ data, onUpdate, currentUse
   );
 };
 
-export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, currentRole }) => {
+export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, currentRole, currentUser }) => {
   const state: Phase4Data = { ...INITIAL_PHASE_4, ...(data || {}), timeline: Array.isArray(data?.timeline) ? data.timeline : [] };
   const [activeTab, setActiveTab] = useState<'Intro' | 'Analysis' | 'Design' | 'Planning'>('Intro');
   const updateField = (field: keyof Phase4Data, value: any) => onUpdate({ ...state, [field]: value });
   
+  const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) handleImageUploadWithResize(file, (b64) => updateField('mapImage', b64)); };
+  
+  // Auto-authoring for timeline
+  const addActivity = () => updateField('timeline', [...state.timeline, { id: Date.now().toString(), activity: '', dates: '', resources: '', author: currentUser || '' }]);
+  const updateActivity = (idx: number, field: keyof PlanningActivity, val: string) => { const n = [...state.timeline]; n[idx] = { ...n[idx], [field]: val }; updateField('timeline', n); };
+
   return (
     <div className="space-y-6 pb-10">
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -260,10 +266,30 @@ export const Phase4Editor: React.FC<EditorProps> = ({ data, onUpdate, currentRol
          <button onClick={() => setActiveTab('Design')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Design' ? 'bg-pink-600 text-white' : 'bg-white border'}`}>🔴 Diseño (Prod)</button>
          <button onClick={() => setActiveTab('Planning')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Planning' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>🔵 Plan (Coord)</button>
       </div>
-      {activeTab === 'Intro' && (<div><RoleBanner role={RoleType.DOCUMENTATION} isOwner={currentRole === RoleType.DOCUMENTATION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Introducción</h3><textarea className="w-full p-3 border rounded h-32" value={state.introContext} onChange={(e) => updateField('introContext', e.target.value)} /></div></div>)}
+      {activeTab === 'Intro' && (
+         <div>
+            <RoleBanner role={RoleType.DOCUMENTATION} isOwner={currentRole === RoleType.DOCUMENTATION} />
+            <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+               <h3>Introducción</h3>
+               <textarea className="w-full p-3 border rounded h-32" value={state.introContext} onChange={(e) => updateField('introContext', e.target.value)} placeholder="Contexto..." />
+               <div className="p-4 bg-slate-50 rounded border border-dashed border-slate-300">
+                  <p className="text-sm font-bold mb-2">Mapa de la Zona (Densidad)</p>
+                  {state.mapImage ? <div className="mb-2"><img src={state.mapImage} className="h-32 object-contain" /><button onClick={() => updateField('mapImage', '')} className="text-xs text-red-500">Eliminar</button></div> : <input type="file" accept="image/*" onChange={handleMapUpload} />}
+               </div>
+            </div>
+         </div>
+      )}
       {activeTab === 'Analysis' && (<div><RoleBanner role={RoleType.RESOURCES} isOwner={currentRole === RoleType.RESOURCES} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Análisis del Sector</h3><textarea className="w-full p-3 border rounded h-32" value={state.sectorCharacterization} onChange={(e) => updateField('sectorCharacterization', e.target.value)} /></div></div>)}
       {activeTab === 'Design' && (<div><RoleBanner role={RoleType.PRODUCTION} isOwner={currentRole === RoleType.PRODUCTION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Viabilidad</h3><textarea className="w-full p-3 border rounded h-32" value={state.technicalViability} onChange={(e) => updateField('technicalViability', e.target.value)} /></div></div>)}
-      {activeTab === 'Planning' && (<div><RoleBanner role={RoleType.COORDINATOR} isOwner={currentRole === RoleType.COORDINATOR} /><div className="bg-white p-6 rounded-xl border shadow-sm"><h3>Cronograma</h3></div></div>)}
+      {activeTab === 'Planning' && (
+         <div>
+            <RoleBanner role={RoleType.COORDINATOR} isOwner={currentRole === RoleType.COORDINATOR} />
+            <div className="bg-white p-6 rounded-xl border shadow-sm">
+               <div className="flex justify-between mb-4"><h3 className="font-bold">Cronograma</h3><button onClick={addActivity}><Plus className="w-4 h-4"/></button></div>
+               <div className="space-y-2">{(state.timeline || []).map((act, i) => (<div key={i} className="flex gap-2 text-sm"><input className="flex-1 border p-1" value={act.activity} onChange={(e) => updateActivity(i, 'activity', e.target.value)} placeholder="Actividad" /><input className="w-24 border p-1" value={act.dates} onChange={(e) => updateActivity(i, 'dates', e.target.value)} placeholder="Fechas" /><span className="text-xs text-slate-400 self-center">{act.author}</span></div>))}</div>
+            </div>
+         </div>
+      )}
     </div>
   );
 };
@@ -279,6 +305,13 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, phase3Data
   const displayedFinancials = state.financials.filter(f => { const m = menu.find(dish => dish.id === f.dishId); return !filterMyDishes || !currentUser || m?.author === currentUser; });
 
   const addFinancial = (dishId: string) => { if (state.financials.find(f => f.dishId === dishId)) return; updateField('financials', [...state.financials, { dishId, numberOfRations: 10, totalCost: 0, sellingPrice: 0, ingredients: [] }]); };
+  const updateFinancial = (dishId: string, fData: Partial<DishFinancial>) => updateField('financials', state.financials.map(f => f.dishId === dishId ? { ...f, ...fData } : f));
+
+  // Calculations
+  const calculateTotals = (f: DishFinancial) => {
+     const total = f.ingredients.reduce((sum, ing) => sum + (ing.price || 0), 0);
+     return total;
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -293,23 +326,160 @@ export const Phase5Editor: React.FC<EditorProps> = ({ data, onUpdate, phase3Data
                 <select className="p-2 border rounded flex-1" id="dishSelect"><option value="">-- Seleccionar Plato --</option>{myMenu.filter(m => !state.financials.find(f => f.dishId === m.id)).map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}</select>
                 <button onClick={() => { const select = document.getElementById('dishSelect') as HTMLSelectElement; if(select.value) { addFinancial(select.value); select.value = ''; }}} className="bg-indigo-600 text-white px-4 py-2 rounded font-bold text-sm">Crear Escandallo</button>
              </div>
-             <div className="space-y-8">{displayedFinancials.map(fin => (<div key={fin.dishId} className="bg-white border p-4 rounded shadow-sm"><h3 className="font-bold">{menu.find(m => m.id === fin.dishId)?.name}</h3><p className="text-sm text-slate-500">Coste Total: {fin.totalCost}€</p></div>))}</div>
+             <div className="space-y-8">
+                {displayedFinancials.map(fin => {
+                   const dish = menu.find(m => m.id === fin.dishId);
+                   const totalCost = calculateTotals(fin);
+                   const costPerRation = fin.numberOfRations > 0 ? totalCost / fin.numberOfRations : 0;
+                   const foodCostPct = fin.sellingPrice > 0 ? (costPerRation / fin.sellingPrice) * 100 : 0;
+                   
+                   // Reverse Calc
+                   const [targetFC, setTargetFC] = useState("");
+                   const handleReverse = () => {
+                      const target = parseFloat(targetFC);
+                      if (target > 0 && costPerRation > 0) {
+                         const suggestedPVP = costPerRation / (target / 100);
+                         updateFinancial(fin.dishId, { sellingPrice: parseFloat(suggestedPVP.toFixed(2)) });
+                      }
+                   };
+
+                   return (
+                      <div key={fin.dishId} className="bg-white border border-slate-300 rounded-xl overflow-hidden shadow-sm">
+                         <div className="bg-indigo-50 p-4 border-b border-indigo-100 flex justify-between items-center">
+                            <h3 className="font-bold text-indigo-900">{dish?.name}</h3>
+                            <div className="flex items-center gap-4 text-sm">
+                               <label>Raciones: <input type="number" className="w-16 p-1 border rounded text-center" value={fin.numberOfRations} onChange={(e) => updateFinancial(fin.dishId, { numberOfRations: parseInt(e.target.value) || 1 })} /></label>
+                            </div>
+                         </div>
+                         <div className="p-4">
+                            <table className="w-full text-sm mb-4">
+                               <thead className="bg-slate-100 text-slate-600 font-bold"><tr className="text-left"><th className="p-2">Ingrediente</th><th className="p-2">Cant</th><th className="p-2">Ud</th><th className="p-2 text-right">Coste Total (€)</th><th></th></tr></thead>
+                               <tbody>
+                                  {fin.ingredients.map((ing, idx) => (
+                                     <tr key={idx} className="border-b">
+                                        <td className="p-2"><input className="w-full bg-transparent" value={ing.name} onChange={(e) => { const n = [...fin.ingredients]; n[idx].name = e.target.value; updateFinancial(fin.dishId, { ingredients: n }); }} placeholder="Nombre" /></td>
+                                        <td className="p-2"><input className="w-16 bg-transparent" value={ing.quantity} onChange={(e) => { const n = [...fin.ingredients]; n[idx].quantity = e.target.value; updateFinancial(fin.dishId, { ingredients: n }); }} placeholder="Cant" /></td>
+                                        <td className="p-2"><input className="w-16 bg-transparent" value={ing.unit} onChange={(e) => { const n = [...fin.ingredients]; n[idx].unit = e.target.value; updateFinancial(fin.dishId, { ingredients: n }); }} placeholder="kg/L" /></td>
+                                        <td className="p-2 text-right"><input type="number" className="w-20 text-right bg-transparent" value={ing.price} onChange={(e) => { const n = [...fin.ingredients]; n[idx].price = parseFloat(e.target.value) || 0; updateFinancial(fin.dishId, { ingredients: n, totalCost: calculateTotals({...fin, ingredients: n}) }); }} /></td>
+                                        <td className="p-2 text-center"><button onClick={() => { const n = fin.ingredients.filter((_, i) => i !== idx); updateFinancial(fin.dishId, { ingredients: n, totalCost: calculateTotals({...fin, ingredients: n}) }); }} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4"/></button></td>
+                                     </tr>
+                                  ))}
+                               </tbody>
+                            </table>
+                            <button onClick={() => updateFinancial(fin.dishId, { ingredients: [...fin.ingredients, { name: '', quantity: '', unit: '', price: 0 }] })} className="text-xs font-bold text-indigo-600 flex items-center gap-1 mb-4"><Plus className="w-3 h-3" /> Añadir Ingrediente</button>
+                            
+                            <div className="bg-slate-50 p-4 rounded-lg grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border border-slate-200">
+                               <div><p className="text-slate-500 font-bold text-xs uppercase">Coste Total MP</p><p className="text-lg font-mono">{totalCost.toFixed(2)}€</p></div>
+                               <div><p className="text-slate-500 font-bold text-xs uppercase">Coste x Ración</p><p className="text-lg font-mono text-indigo-600">{costPerRation.toFixed(2)}€</p></div>
+                               <div className="col-span-2 flex items-end gap-2">
+                                  <div className="flex-1">
+                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Precio Venta (PVP)</label>
+                                     <input type="number" className="w-full p-2 border border-slate-300 rounded font-bold text-emerald-700" value={fin.sellingPrice} onChange={(e) => updateFinancial(fin.dishId, { sellingPrice: parseFloat(e.target.value) || 0 })} />
+                                  </div>
+                                  <div className="flex-1 text-right">
+                                     <p className="text-xs font-bold text-slate-500 uppercase mb-1">Food Cost %</p>
+                                     <p className={`text-lg font-bold ${foodCostPct > 35 ? 'text-red-500' : 'text-emerald-500'}`}>{foodCostPct.toFixed(1)}%</p>
+                                  </div>
+                               </div>
+                               <div className="col-span-4 mt-2 border-t pt-2 flex items-center gap-2">
+                                  <Calculator className="w-4 h-4 text-slate-400" />
+                                  <input className="w-20 p-1 border rounded text-xs" placeholder="% Obj" value={targetFC} onChange={(e) => setTargetFC(e.target.value)} />
+                                  <button onClick={handleReverse} className="text-xs bg-slate-200 px-2 py-1 rounded hover:bg-slate-300">Calc. Precio Sugerido</button>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   );
+                })}
+             </div>
           </div>
       )}
     </div>
   );
 };
 
-export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, currentRole }) => {
-  const state: Phase6Data = { ...INITIAL_PHASE_6, ...(data || {}) };
-  const [activeTab, setActiveTab] = useState<'Memory' | 'Defense'>('Memory');
+export const Phase6Editor: React.FC<EditorProps> = ({ data, onUpdate, currentRole, currentUser, config, fullProjectData }) => {
+  const state: Phase6Data = { ...INITIAL_PHASE_6, ...(data || {}), coEvaluations: Array.isArray(data?.coEvaluations) ? data.coEvaluations : [] };
+  const [activeTab, setActiveTab] = useState<'Memory' | 'Defense' | 'Checklist' | 'CoEval' | 'Polish'>('Memory');
   const updateField = (field: keyof Phase6Data, value: any) => onUpdate({ ...state, [field]: value });
+
+  // CoEval Logic
+  const myEvals = (state.coEvaluations || []).filter(e => e.reviewer === currentUser);
+  const addEval = () => updateField('coEvaluations', [...state.coEvaluations, { id: Date.now().toString(), reviewer: currentUser || '', target: '', justification: '', score: 0, timestamp: new Date().toISOString() }]);
+  const updateEval = (idx: number, f: string, v: any) => {
+     const all = [...state.coEvaluations];
+     // Find index in main array
+     const realIdx = all.findIndex(e => e.id === myEvals[idx].id);
+     if (realIdx !== -1) { all[realIdx] = { ...all[realIdx], [f]: v }; updateField('coEvaluations', all); }
+  };
+
+  // Polish logic
+  const importDraft = (section: 'intro' | 'analysis' | 'design') => {
+     let text = "";
+     if (section === 'intro') text = fullProjectData?.phases?.phase4?.introContext || "";
+     if (section === 'analysis') text = fullProjectData?.phases?.phase4?.sectorCharacterization || "";
+     if (section === 'design') text = fullProjectData?.phases?.phase4?.problemDetected || "";
+     updateField('polishedTexts', { ...state.polishedTexts, [section]: text });
+  };
 
   return (
     <div className="space-y-6 pb-10">
-       <div className="flex gap-2 mb-4"><button onClick={() => setActiveTab('Memory')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Memory' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>🟢 Memoria (Doc)</button><button onClick={() => setActiveTab('Defense')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Defense' ? 'bg-purple-600 text-white' : 'bg-white border'}`}>🟣 Defensa (Com)</button></div>
-       {activeTab === 'Memory' && (<div><RoleBanner role={RoleType.DOCUMENTATION} isOwner={currentRole === RoleType.DOCUMENTATION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Resumen</h3><textarea className="w-full p-3 border rounded h-32" value={state.abstract} onChange={(e) => updateField('abstract', e.target.value)} /></div></div>)}
-       {activeTab === 'Defense' && (<div><RoleBanner role={RoleType.COMMUNICATION} isOwner={currentRole === RoleType.COMMUNICATION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Enlaces Defensa</h3><input className="w-full p-3 border rounded" value={state.presentationUrl} onChange={(e) => updateField('presentationUrl', e.target.value)} /></div></div>)}
+       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <button onClick={() => setActiveTab('Memory')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Memory' ? 'bg-emerald-600 text-white' : 'bg-white border'}`}>🟢 Memoria</button>
+          <button onClick={() => setActiveTab('Polish')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Polish' ? 'bg-indigo-600 text-white' : 'bg-white border'}`}>🖊️ Edición Final</button>
+          <button onClick={() => setActiveTab('Defense')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'Defense' ? 'bg-purple-600 text-white' : 'bg-white border'}`}>🟣 Defensa</button>
+          <button onClick={() => setActiveTab('CoEval')} className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'CoEval' ? 'bg-red-600 text-white' : 'bg-white border'}`}>🔥 Coevaluación</button>
+       </div>
+       
+       {activeTab === 'Memory' && (<div><RoleBanner role={RoleType.DOCUMENTATION} isOwner={currentRole === RoleType.DOCUMENTATION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Resumen Ejecutivo</h3><textarea className="w-full p-3 border rounded h-32" value={state.abstract} onChange={(e) => updateField('abstract', e.target.value)} /><h3>Conclusiones Finales</h3><textarea className="w-full p-3 border rounded h-32" value={state.finalConclusions} onChange={(e) => updateField('finalConclusions', e.target.value)} /></div></div>)}
+       
+       {activeTab === 'Polish' && (
+          <div className="space-y-6">
+             <div className="bg-white p-6 rounded-xl border shadow-sm">
+                <h3 className="font-bold mb-4">Imágenes de Memoria</h3>
+                <div className="grid grid-cols-2 gap-4">
+                   <div><label className="block text-sm font-bold mb-2">Portada</label>{state.coverImage ? <img src={state.coverImage} className="h-32 object-cover rounded mb-2" /> : null}<input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUploadWithResize(e.target.files[0], (b64) => updateField('coverImage', b64))} /></div>
+                   <div><label className="block text-sm font-bold mb-2">Equipo</label>{state.teamImage ? <img src={state.teamImage} className="h-32 object-cover rounded mb-2" /> : null}<input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUploadWithResize(e.target.files[0], (b64) => updateField('teamImage', b64))} /></div>
+                </div>
+             </div>
+             <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+                <div className="flex justify-between items-center">
+                   <h3 className="font-bold">Redacción: Introducción</h3>
+                   <button onClick={() => importDraft('intro')} className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Importar Borrador Fase 4</button>
+                </div>
+                <textarea className="w-full p-3 border rounded h-40 document-font" value={state.polishedTexts?.intro || ""} onChange={(e) => updateField('polishedTexts', {...state.polishedTexts, intro: e.target.value})} />
+             </div>
+          </div>
+       )}
+
+       {activeTab === 'Defense' && (<div><RoleBanner role={RoleType.COMMUNICATION} isOwner={currentRole === RoleType.COMMUNICATION} /><div className="bg-white p-6 rounded-xl border shadow-sm space-y-4"><h3>Enlaces Defensa</h3><input className="w-full p-3 border rounded" value={state.presentationUrl} onChange={(e) => updateField('presentationUrl', e.target.value)} placeholder="URL Presentación" /></div></div>)}
+       
+       {activeTab === 'CoEval' && (
+          <div className="space-y-6">
+             <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-red-800 text-sm mb-4 flex gap-2 items-start">
+                <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0"/>
+                <div><strong>CONFIDENCIAL:</strong> Evalúa a tus compañeros. Rúbrica ±1 punto. Se honesto/a. Solo tú y el profesor verán esto.</div>
+             </div>
+             <div className="flex justify-end"><button onClick={addEval} className="bg-red-600 text-white px-4 py-2 rounded font-bold text-sm">+ Añadir Evaluación</button></div>
+             <div className="space-y-4">
+                {myEvals.map((ev, idx) => (
+                   <div key={idx} className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                         <div><label className="text-xs font-bold">Compañero</label><select className="w-full p-2 border rounded" value={ev.target} onChange={(e) => updateEval(idx, 'target', e.target.value)}><option value="">-- Seleccionar --</option>{(config?.members || []).filter(m => m.name !== currentUser).map((m, i) => <option key={i} value={m.name}>{m.name}</option>)}</select></div>
+                         <div>
+                            <label className="text-xs font-bold">Puntuación (±1)</label>
+                            <div className="flex items-center gap-3">
+                               <input type="range" min="-1" max="1" step="0.1" className="flex-1" value={ev.score} onChange={(e) => updateEval(idx, 'score', parseFloat(e.target.value))} />
+                               <span className={`font-bold w-12 text-center ${ev.score < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{ev.score > 0 ? '+' : ''}{ev.score.toFixed(1)}</span>
+                            </div>
+                         </div>
+                      </div>
+                      <textarea className="w-full p-2 border rounded text-sm" placeholder="Justificación (Obligatoria)..." value={ev.justification} onChange={(e) => updateEval(idx, 'justification', e.target.value)} />
+                   </div>
+                ))}
+             </div>
+          </div>
+       )}
     </div>
   );
 };
